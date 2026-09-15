@@ -1,4 +1,4 @@
-import type { ItemStatus, OperationType } from '@/types/api'
+import type { ExecutableOperationType, ItemStatus, OperationType } from '@/types/api'
 
 interface StatusMeta {
   label: string
@@ -68,9 +68,21 @@ export const OPERATION_META: Record<OperationType, OperationMeta> = {
     badgeClassName: 'bg-op-writeoff-bg text-op-writeoff border-op-writeoff/25',
     textClassName: 'text-op-writeoff',
   },
+  // Служебная запись, а не движение товара, — поэтому нейтральный серый.
+  CANCELLATION: {
+    label: 'Отмена',
+    action: 'Отмена',
+    accusative: 'отмену',
+    badgeClassName: 'bg-muted text-muted-foreground border-border',
+    textClassName: 'text-muted-foreground',
+  },
 }
 
-export const OPERATION_TYPES: OperationType[] = ['ADMISSION', 'SELL', 'WRITE_OFF']
+/** Что пользователь проводит сам. Отмену за него создаёт бэкенд. */
+export const OPERATION_TYPES: ExecutableOperationType[] = ['ADMISSION', 'SELL', 'WRITE_OFF']
+
+/** В журнале фильтруем и по отменам — иначе их не найти. */
+export const OPERATION_FILTER_TYPES: OperationType[] = [...OPERATION_TYPES, 'CANCELLATION']
 
 export const ROLE_LABEL: Record<'ADMIN' | 'WORKER', string> = {
   ADMIN: 'Админ',

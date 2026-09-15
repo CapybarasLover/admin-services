@@ -17,7 +17,7 @@ import { LIMITS, OPERATION_META } from '@/lib/constants'
 import { showApiError } from '@/lib/errors'
 import { formatMoney, pieces } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import type { OperationType, StorageItemDto } from '@/types/api'
+import type { ExecutableOperationType, StorageItemDto } from '@/types/api'
 
 type CostMode = 'unit' | 'batch'
 
@@ -25,7 +25,7 @@ interface OperationDialogProps {
   storageId: number
   storageName: string
   item: StorageItemDto | null
-  type: OperationType | null
+  type: ExecutableOperationType | null
   onClose: () => void
 }
 

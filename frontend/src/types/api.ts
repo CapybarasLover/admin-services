@@ -2,8 +2,11 @@
 // включая storageItemListDto — переименовывать на клиенте нечего.
 
 export type ItemStatus = 'ENOUGH' | 'FEW' | 'OUT'
-export type OperationType = 'ADMISSION' | 'SELL' | 'WRITE_OFF'
+export type OperationType = 'ADMISSION' | 'SELL' | 'WRITE_OFF' | 'CANCELLATION'
 export type Role = 'ADMIN' | 'WORKER'
+
+/** Отмену нельзя провести руками: её создаёт бэкенд при удалении операции. */
+export type ExecutableOperationType = Exclude<OperationType, 'CANCELLATION'>
 
 export interface StorageInfoDto {
   id: number
@@ -24,6 +27,7 @@ export interface StorageDto {
 }
 
 export interface OperationDto {
+  id: number
   storageName: string
   operationType: OperationType
   productName: string
@@ -31,6 +35,10 @@ export interface OperationDto {
   operationDateTime: string
   operationCost: number | null
   comment: string | null
+  /** Операция удалена: остаток откачен, в отчёты она уже не попадает. */
+  isCanceled: boolean
+  /** У отменяющей операции — id той, которую она отменила. */
+  cancelsOperationId: number | null
 }
 
 export interface PageDto<T> {
@@ -88,7 +96,7 @@ export interface AuthResponse extends AuthUser {
 }
 
 export interface OperationRequest {
-  operationType: OperationType
+  operationType: ExecutableOperationType
   productName: string
   count: number
   operationCost?: number

@@ -25,14 +25,14 @@ import { OPERATION_META, OPERATION_TYPES, STATUS_META } from '@/lib/constants'
 import { showApiError } from '@/lib/errors'
 import { formatMoney, pieces } from '@/lib/format'
 import { useStorageContext } from '@/pages/StorageLayout'
-import type { ItemStatus, OperationType, StorageItemDto } from '@/types/api'
+import type { ExecutableOperationType, ItemStatus, StorageItemDto } from '@/types/api'
 
 export function ItemsTab() {
   const { storageId, storage, isLoading } = useStorageContext()
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [adding, setAdding] = useState(false)
-  const [operation, setOperation] = useState<{ item: StorageItemDto; type: OperationType } | null>(null)
+  const [operation, setOperation] = useState<{ item: StorageItemDto; type: ExecutableOperationType } | null>(null)
   const [pendingDeletion, setPendingDeletion] = useState<StorageItemDto | null>(null)
   const { isAdmin } = useAuth()
   const deleteProduct = useDeleteProduct(storageId)
@@ -248,7 +248,7 @@ function RowActions({
 }: {
   item: StorageItemDto
   isAdmin: boolean
-  onOperation: (type: OperationType) => void
+  onOperation: (type: ExecutableOperationType) => void
   onDelete: () => void
 }) {
   return (

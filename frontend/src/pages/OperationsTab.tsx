@@ -1,34 +1,46 @@
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ScrollText, SearchX } from 'lucide-react'
-import { useMemo } from 'react'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ScrollText, SearchX, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorState } from '@/components/ErrorState'
 import { DateRangePicker } from '@/components/DateRangePicker'
 import { OperationTypeBadge } from '@/components/OperationTypeBadge'
 import { TableSkeleton } from '@/components/TableSkeleton'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Segmented } from '@/components/ui/segmented'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { useOperations } from '@/hooks/useOperations'
+import { useCancelOperation, useOperations } from '@/hooks/useOperations'
 import { useStorage, useStorages } from '@/hooks/useStorages'
-import { OPERATION_META, OPERATION_TYPES, PAGE_SIZES } from '@/lib/constants'
+import { RoleGate } from '@/lib/auth'
+import { OPERATION_FILTER_TYPES, OPERATION_META, PAGE_SIZES } from '@/lib/constants'
 import { validateRange } from '@/lib/dates'
-import { formatDateTime, formatMoney, operations as operationsPlural } from '@/lib/format'
+import { showApiError } from '@/lib/errors'
+import { formatDateTime, formatMoney, operations as operationsPlural, pieces } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useStorageContext } from '@/pages/StorageLayout'
-import type { OperationType } from '@/types/api'
+import type { OperationDto, OperationType } from '@/types/api'
 
 const ALL = '__all'
 const DEFAULT_SORT = 'operationDateTime,desc'
 
 type TypeFilter = OperationType | 'ALL'
 
+/** Отменять можно только живое движение товара: ни отмену, ни уже отменённое. */
+function isCancelable(operation: OperationDto) {
+  return !operation.isCanceled && operation.operationType !== 'CANCELLATION'
+}
+
 export function OperationsTab() {
   const { storage } = useStorageContext()
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: storages } = useStorages()
+  const [pendingCancel, setPendingCancel] = useState<OperationDto | null>(null)
+  const cancelOperation = useCancelOperation()
 
   // Склад предзаполнен выбранным слева; ?storage=all снимает фильтр.
   const storageParam = searchParams.get('storage')
@@ -80,6 +92,17 @@ export function OperationsTab() {
     const next = new URLSearchParams(searchParams)
     for (const key of ['storage', 'product', 'type', 'from', 'to', 'page', 'sort']) next.delete(key)
     setSearchParams(next, { replace: true })
+  }
+
+  async function confirmCancel() {
+    if (!pendingCancel) return
+    try {
+      await cancelOperation.mutateAsync(pendingCancel.id)
+      toast.success('Операция удалена', { description: 'Остаток на складе вернулся к значению до неё.' })
+      setPendingCancel(null)
+    } catch (cause) {
+      showApiError(cause, 'Не удалось удалить операцию')
+    }
   }
 
   function toggleSort(field: string) {
@@ -163,7 +186,7 @@ export function OperationsTab() {
             className="flex-nowrap sm:max-w-xl"
             options={[
               { value: 'ALL', label: 'Все' },
-              ...OPERATION_TYPES.map((type) => ({
+              ...OPERATION_FILTER_TYPES.map((type) => ({
                 value: type,
                 label: OPERATION_META[type].label,
                 activeClassName: OPERATION_META[type].textClassName,
@@ -190,7 +213,7 @@ export function OperationsTab() {
         {dateError ? (
           <EmptyState icon={SearchX} title="Поправьте период" description={dateError} />
         ) : query.isLoading ? (
-          <TableSkeleton columns={7} />
+          <TableSkeleton columns={8} />
         ) : query.isError ? (
           <ErrorState error={query.error} onRetry={() => void query.refetch()} />
         ) : !rows.length ? (
@@ -235,23 +258,51 @@ export function OperationsTab() {
                   Сумма
                 </SortableHead>
                 <TableHead>Комментарий</TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((operation, index) => (
-                <TableRow key={`${operation.operationDateTime}-${operation.productName}-${index}`}>
+              {rows.map((operation) => (
+                // Отменённую строку не прячем: её видно зачёркнутой, чтобы история читалась целиком.
+                <TableRow key={operation.id} className={cn(operation.isCanceled && 'text-muted-foreground')}>
                   <TableCell className="tabular whitespace-nowrap text-muted-foreground">
                     {formatDateTime(operation.operationDateTime)}
                   </TableCell>
                   <TableCell>{operation.storageName}</TableCell>
-                  <TableCell className="font-medium">{operation.productName}</TableCell>
-                  <TableCell>
-                    <OperationTypeBadge type={operation.operationType} />
+                  <TableCell className={cn('font-medium', operation.isCanceled && 'line-through')}>
+                    {operation.productName}
                   </TableCell>
-                  <TableCell className="tabular text-right">{operation.amount}</TableCell>
-                  <TableCell className="tabular text-right">{formatMoney(operation.operationCost)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      <OperationTypeBadge type={operation.operationType} />
+                      {operation.isCanceled ? (
+                        <Badge className="bg-muted text-muted-foreground">Отменена</Badge>
+                      ) : null}
+                    </div>
+                  </TableCell>
+                  <TableCell className={cn('tabular text-right', operation.isCanceled && 'line-through')}>
+                    {operation.amount}
+                  </TableCell>
+                  <TableCell className={cn('tabular text-right', operation.isCanceled && 'line-through')}>
+                    {formatMoney(operation.operationCost)}
+                  </TableCell>
                   <TableCell className="max-w-[16rem] truncate text-muted-foreground" title={operation.comment ?? ''}>
                     {operation.comment || '—'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <RoleGate admin>
+                      {isCancelable(operation) ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-destructive"
+                          aria-label={`Удалить операцию «${OPERATION_META[operation.operationType].label}» по товару ${operation.productName}`}
+                          onClick={() => setPendingCancel(operation)}
+                        >
+                          <Trash2 />
+                        </Button>
+                      ) : null}
+                    </RoleGate>
                   </TableCell>
                 </TableRow>
               ))}
@@ -302,6 +353,27 @@ export function OperationsTab() {
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={pendingCancel !== null}
+        onOpenChange={(open) => (open ? null : setPendingCancel(null))}
+        title="Удалить операцию?"
+        pending={cancelOperation.isPending}
+        onConfirm={confirmCancel}
+        description={
+          <>
+            {pendingCancel ? (
+              <span className="mb-2 block font-medium text-foreground">
+                {OPERATION_META[pendingCancel.operationType].label} · {pendingCancel.productName} ·{' '}
+                {pieces(pendingCancel.amount)} на {formatMoney(pendingCancel.operationCost)}
+              </span>
+            ) : null}
+            Остаток на складе вернётся к тому, что был до операции. Сама запись останется
+            в журнале с пометкой «Отменена», рядом появится запись «Отмена» — в отчёты
+            не попадёт ни одна из них.
+          </>
+        }
+      />
     </div>
   )
 }

@@ -31,3 +31,21 @@ export function useExecuteOperation(storageId: number) {
     },
   })
 }
+
+/**
+ * Удаление операции на бэкенде — это отмена: остаток откатывается,
+ * исходная запись помечается отменённой, рядом появляется запись «Отмена».
+ * Журнал показывает операции всех складов, поэтому сбрасываем их остатки целиком.
+ */
+export function useCancelOperation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (operationId: number) =>
+      apiRequest<void>(`/storage/operations/${operationId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storage'] })
+      queryClient.invalidateQueries({ queryKey: ['operations'] })
+      queryClient.invalidateQueries({ queryKey: ['report'] })
+    },
+  })
+}
