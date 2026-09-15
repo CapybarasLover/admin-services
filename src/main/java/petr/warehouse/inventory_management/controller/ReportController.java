@@ -1,5 +1,7 @@
 package petr.warehouse.inventory_management.controller;
 
+import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import petr.warehouse.inventory_management.dto.SummaryReportDto;
+import petr.warehouse.inventory_management.filter.ReportFilter;
 import petr.warehouse.inventory_management.service.ReportPdfClient;
 import petr.warehouse.inventory_management.service.ReportService;
 
@@ -30,22 +33,24 @@ public class ReportController {
 
     @GetMapping("/summary")
     public ResponseEntity<SummaryReportDto> getReportSummary(
-            @RequestParam String storageName,
-            @RequestParam LocalDate dateFrom,
-            @RequestParam LocalDate dateTo
-    ){
-        return ResponseEntity.ok(reportService.createNewReport(storageName, dateFrom, dateTo));
+            @Valid @ParameterObject ReportFilter filter
+    ) {
+        return ResponseEntity.ok(
+                reportService.createNewReport(filter.getStorageName(), filter.getDateFrom(), filter.getDateTo())
+        );
     }
 
     //Тот же отчёт, но отрисованный в PDF отдельным python-сервисом.
     @GetMapping(value = "/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     public ResponseEntity<byte[]> getReportPdf(
-            @RequestParam String storageName,
-            @RequestParam LocalDate dateFrom,
-            @RequestParam LocalDate dateTo,
+            @Valid @ParameterObject ReportFilter filter,
             //Отчёт печатается в той же теме, в которой пользователь смотрит интерфейс.
             @RequestParam(defaultValue = "light") String theme
     ){
+        String storageName = filter.getStorageName();
+        LocalDate dateFrom = filter.getDateFrom();
+        LocalDate dateTo = filter.getDateTo();
+
         SummaryReportDto summary = reportService.createNewReport(storageName, dateFrom, dateTo);
         byte[] pdf = reportPdfClient.render(summary, "dark".equalsIgnoreCase(theme) ? "dark" : "light");
 

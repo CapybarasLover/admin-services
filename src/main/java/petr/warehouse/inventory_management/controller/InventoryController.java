@@ -104,4 +104,12 @@ public class InventoryController {
                 pageable
         );
     }
+
+    @DeleteMapping("/operations/{operationId}")
+    public ResponseEntity<Void> cancelOperation(
+            @PathVariable @Positive Long operationId
+    ) {
+        operationService.cancelOperation(operationId);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
 }

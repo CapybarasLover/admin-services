@@ -9,6 +9,7 @@ public class OperationMapper {
     public OperationDto toDto(Operation operation){
         OperationDto dto = new OperationDto();
 
+        dto.setId(operation.getId());
         dto.setStorageName(operation.getStorageName());
         dto.setProductName(operation.getProductName());
         dto.setOperationType(operation.getOperationType());
@@ -16,6 +17,8 @@ public class OperationMapper {
         dto.setOperationDateTime(operation.getOperationDateTime());
         dto.setOperationCost(operation.getOperationCost());
         dto.setComment(operation.getComment());
+        dto.setCancelsOperationId(operation.getCancelsOperationId());
+        dto.setIsCanceled(operation.getIsCanceled());
 
         return dto;
     }

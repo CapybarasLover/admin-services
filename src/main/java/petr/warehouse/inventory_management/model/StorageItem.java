@@ -61,9 +61,8 @@ public class StorageItem {
         }
     }
 
-    public Integer minusCount(Integer minusCount) {
+    public void subtractCount(Integer minusCount) {
         itemCount -= minusCount;
         changeStatus();
-        return itemCount;
     }
 }

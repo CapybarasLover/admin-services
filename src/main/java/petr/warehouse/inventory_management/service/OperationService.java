@@ -9,14 +9,18 @@ import org.springframework.transaction.annotation.Transactional;
 import petr.warehouse.inventory_management.dto.OperationDto;
 import petr.warehouse.inventory_management.dto.OperationRequestDto;
 import petr.warehouse.inventory_management.exception.data.IllegalSellOrWriteOffCount;
+import petr.warehouse.inventory_management.exception.data.OperationCancelException;
+import petr.warehouse.inventory_management.exception.data.OperationNotFound;
 import petr.warehouse.inventory_management.exception.data.ProductNotFoundException;
 import petr.warehouse.inventory_management.exception.request.ZeroOrNullAdmissionCost;
 import petr.warehouse.inventory_management.filter.OperationFilter;
 import petr.warehouse.inventory_management.mapper.OperationMapper;
+import petr.warehouse.inventory_management.model.OperationType;
 import petr.warehouse.inventory_management.repository.OperationRepo;
 import petr.warehouse.inventory_management.repository.StorageItemRepo;
 import petr.warehouse.inventory_management.model.Operation;
 import petr.warehouse.inventory_management.model.StorageItem;
+import petr.warehouse.inventory_management.repository.StorageRepo;
 import petr.warehouse.inventory_management.repository.specification.OperationSpecifications;
 
 import java.math.BigDecimal;
@@ -29,12 +33,19 @@ public class OperationService {
     private final OperationRepo opRepo;
     private final StorageItemRepo itemRepo;
     private final OperationMapper operationMapper;
+    private final StorageRepo storageRepo;
 
     @Autowired
-    public OperationService(OperationRepo opRepo, StorageItemRepo itemRepo, OperationMapper operationMapper){
+    public OperationService(
+            OperationRepo opRepo,
+            StorageItemRepo itemRepo,
+            OperationMapper operationMapper,
+            StorageRepo storageRepo
+    ){
         this.opRepo = opRepo;
         this.itemRepo = itemRepo;
         this.operationMapper = operationMapper;
+        this.storageRepo = storageRepo;
     }
 
     public void executeOperation(Long storageId, OperationRequestDto requestBody){
@@ -71,7 +82,7 @@ public class OperationService {
                     );
                 }
 
-                item.minusCount(requestBody.getCount());
+                item.subtractCount(requestBody.getCount());
                 itemRepo.save(item);
 
                 Operation sellOrWriteOffOperation = Operation.createSellOrWriteOffOperation(
@@ -86,6 +97,8 @@ public class OperationService {
 
                 opRepo.save(sellOrWriteOffOperation);
             }
+            case CANCELLATION -> throw new OperationCancelException(
+                    "Нельзя создать операцию типа CANCELLATION напрямую", storageId);
         }
     }
 
@@ -101,5 +114,42 @@ public class OperationService {
 
     private BigDecimal countOperationCost(int unitsSold, BigDecimal unitCost){
         return unitCost.multiply(BigDecimal.valueOf(unitsSold));
+    }
+
+    public void cancelOperation(Long operationId) {
+        //Ищем отменную операцию
+        Operation cancelledOperation = opRepo.findById(operationId)
+                .orElseThrow(() -> new OperationNotFound("Операции с таким id нет", operationId));
+
+        if(cancelledOperation.getIsCanceled() == true ||
+                cancelledOperation.getOperationType() == OperationType.CANCELLATION){
+            throw new OperationCancelException("Эту операцию отменить нельзя, " +
+                    "потому что она либо отменена, либо является отменяющей!", operationId);
+        }
+
+        //Ищем отмененный товар
+        StorageItem itemRevert = itemRepo.findByItemNameAndStorageId(
+                cancelledOperation.getProductName(),
+                storageRepo.getReferenceByName(cancelledOperation.getStorageName()).getId()
+        ).orElseThrow(
+                () -> new ProductNotFoundException(
+                        "Такого товара нет, хотя так не должно быть...",
+                        cancelledOperation.getStorageName(),
+                        cancelledOperation.getProductName()
+        ));
+
+        //Возвращаем все как было до операции
+        switch (cancelledOperation.getOperationType()){
+            case ADMISSION -> itemRevert.subtractCount(cancelledOperation.getAmount());
+            case SELL, WRITE_OFF -> itemRevert.addCount(cancelledOperation.getAmount());
+        }
+
+        cancelledOperation.setIsCanceled(true);
+
+        Operation cancelOperation = Operation.createCancelOperation(cancelledOperation);
+
+        itemRepo.save(itemRevert);
+        opRepo.save(cancelledOperation);
+        opRepo.save(cancelOperation);
     }
 }

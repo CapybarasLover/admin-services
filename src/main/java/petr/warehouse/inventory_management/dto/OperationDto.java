@@ -10,6 +10,7 @@ import java.time.Instant;
 @Getter
 @Setter
 public class OperationDto {
+    private Long id;
     private String storageName;
     private OperationType operationType;
     private String productName;
@@ -17,4 +18,6 @@ public class OperationDto {
     private Instant operationDateTime;
     private BigDecimal operationCost;
     private String comment;
+    private Boolean isCanceled;
+    private Long cancelsOperationId;
 }

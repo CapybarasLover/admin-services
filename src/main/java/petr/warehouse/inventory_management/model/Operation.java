@@ -38,6 +38,12 @@ public class Operation {
     @Column(name = "operation_cost")
     private BigDecimal operationCost;
 
+    @Column(name = "is_cancelled")
+    private Boolean isCanceled;
+
+    @Column(name = "cancels_operation_id")
+    private Long cancelsOperationId;
+
     @Column(name = "comment")
     private String comment;
 
@@ -48,7 +54,8 @@ public class Operation {
             int amount,
             Instant operationDateTime,
             String comment,
-            BigDecimal operationCost
+            BigDecimal operationCost,
+            Long cancelsOperationId
     ){
         this.storageName = storageName;
         this.operationType = operationType;
@@ -57,6 +64,8 @@ public class Operation {
         this.operationDateTime = operationDateTime;
         this.operationCost = operationCost;
         this.comment = comment;
+        this.isCanceled = false;
+        this.cancelsOperationId = cancelsOperationId;
     }
 
     public static Operation createAdmissionOperation(
@@ -75,7 +84,23 @@ public class Operation {
                 amount,
                 operationDateTime,
                 comment,
-                admissionCost
+                admissionCost,
+                null
+        );
+    }
+
+    public static Operation createCancelOperation(
+            Operation operation
+    ){
+        return new Operation(
+                operation.storageName,
+                OperationType.CANCELLATION,
+                operation.productName,
+                operation.amount,
+                Instant.now(),
+                "Отмена операции " + operation.id,
+                operation.getOperationCost(),
+                operation.getId()
         );
     }
 
@@ -95,7 +120,8 @@ public class Operation {
                 amount,
                 operationDateTime,
                 comment,
-                sellCost
+                sellCost,
+                null
         );
     }
 }

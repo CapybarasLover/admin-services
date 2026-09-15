@@ -12,8 +12,8 @@ import java.util.Map;
 
 public record SummaryReportDto(
         String storageName,
-        @PastOrPresent LocalDate dateFrom,
-        @PastOrPresent LocalDate dateTo,
+        LocalDate dateFrom,
+        LocalDate dateTo,
         Instant generatedAt,
         List<StorageItemDto> currentStock,
         StorageStats storageStats,
@@ -34,9 +34,4 @@ public record SummaryReportDto(
             BigDecimal productSpending, BigDecimal productRevenue,
             BigDecimal productProfit
     ) {}
-    @AssertTrue(message = "Дата начала должна быть меньше даты конца.")
-    public boolean isDateRangeValid() {
-        return dateFrom == null || dateTo == null || !dateFrom.isAfter(dateTo);
-    }
-
 }

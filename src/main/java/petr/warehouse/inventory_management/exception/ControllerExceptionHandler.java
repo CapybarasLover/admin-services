@@ -6,10 +6,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import petr.warehouse.inventory_management.exception.data.IllegalSellOrWriteOffCount;
-import petr.warehouse.inventory_management.exception.data.ProductAlreadyExistsException;
-import petr.warehouse.inventory_management.exception.data.ProductNotFoundException;
-import petr.warehouse.inventory_management.exception.data.StorageNotFoundException;
+import petr.warehouse.inventory_management.exception.data.*;
 import petr.warehouse.inventory_management.exception.request.ReportPdfUnavailableException;
 import petr.warehouse.inventory_management.exception.request.ZeroOrNullAdmissionCost;
 
@@ -36,10 +33,28 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler
+    public ProblemDetail handleOperationNotFound(OperationNotFound e, WebRequest webRequest){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                "Операция не найдена");
+        System.out.println(webRequest);
+        return problemDetail;
+    }
+
+    @ExceptionHandler
     public ProblemDetail handleProductAlreadyExistsException(ProductAlreadyExistsException e, WebRequest webRequest){
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
-                "Товар с таким именем уже есть на складе!");
+                "Товар с таким именем уже есть на складе");
+        System.out.println(webRequest);
+        return problemDetail;
+    }
+
+    @ExceptionHandler
+    public ProblemDetail handleOperationCancelException(OperationCancelException e, WebRequest webRequest){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                "Сейчас эту операцию удалить нельзя");
         System.out.println(webRequest);
         return problemDetail;
     }
@@ -48,7 +63,7 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     public ProblemDetail handleProductIllegalOperation(IllegalSellOrWriteOffCount e, WebRequest webRequest){
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
-                "На складе недостаточно товара!");
+                "На складе недостаточно товара");
         System.out.println(webRequest);
         return problemDetail;
     }
@@ -78,7 +93,7 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode status,
             WebRequest request) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-        problemDetail.setTitle("Validation failed");
+        problemDetail.setTitle("Ошибка валидации данных");
         problemDetail.setProperty("errors", ex.getBindingResult().getFieldErrors().stream()
                 .map(fe -> Map.of("field", fe.getField(), "message", fe.getDefaultMessage()))
                 .toList());
