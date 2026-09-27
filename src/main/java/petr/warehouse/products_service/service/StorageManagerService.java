@@ -8,6 +8,7 @@ import petr.warehouse.products_service.dto.StorageDto;
 import petr.warehouse.products_service.dto.StorageInfoDto;
 import petr.warehouse.products_service.exception.data.ProductAlreadyExistsException;
 import petr.warehouse.products_service.exception.data.ProductNotFoundException;
+import petr.warehouse.products_service.exception.data.StorageAlreadyExistsException;
 import petr.warehouse.products_service.exception.data.StorageNotFoundException;
 import petr.warehouse.products_service.mapper.StorageMapper;
 import petr.warehouse.products_service.repository.StorageItemRepo;
@@ -51,8 +52,11 @@ public class StorageManagerService {
         Storage storage = new Storage();
         storage.setName(storageName);
 
-        storageRepo.save(storage);
-
+        try {
+            storageRepo.save(storage);
+        } catch (DataIntegrityViolationException e){
+            throw new StorageAlreadyExistsException("Склад с таким именем уже есть", storageName);
+        }
         return storage.getId();
     }
 

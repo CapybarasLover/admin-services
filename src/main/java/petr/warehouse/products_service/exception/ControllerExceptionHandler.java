@@ -50,6 +50,15 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler
+    public ProblemDetail handleStorageAlreadyExistsException(StorageAlreadyExistsException e, WebRequest webRequest){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                "Склад с таким именем уже есть на складе");
+        System.out.println(webRequest);
+        return problemDetail;
+    }
+
+    @ExceptionHandler
     public ProblemDetail handleOperationCancelException(OperationCancelException e, WebRequest webRequest){
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,

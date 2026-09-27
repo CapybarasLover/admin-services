@@ -34,7 +34,6 @@ public class OperationService {
     private final OperationRepo opRepo;
     private final StorageItemRepo itemRepo;
     private final OperationMapper operationMapper;
-    private final StorageRepo storageRepo;
 
     @Autowired
     public OperationService(
@@ -46,7 +45,6 @@ public class OperationService {
         this.opRepo = opRepo;
         this.itemRepo = itemRepo;
         this.operationMapper = operationMapper;
-        this.storageRepo = storageRepo;
     }
 
     public void executeOperation(Long storageId, OperationRequestDto requestBody){
@@ -75,14 +73,6 @@ public class OperationService {
                 opRepo.save(admissionOperation);
             }
             case SELL, WRITE_OFF -> {
-                if(requestBody.getCount() > item.getItemCount()){
-                    throw new IllegalSellOrWriteOffCount(
-                            "Invalid argument.",
-                            requestBody.getProductName(),
-                            requestBody.getCount()
-                    );
-                }
-
                 item.subtractCount(requestBody.getCount());
                 itemRepo.save(item);
 
@@ -129,14 +119,13 @@ public class OperationService {
         }
 
         //Ищем отмененный товар
-        StorageItem itemRevert = itemRepo.findByItemNameAndStorageId(
+        StorageItem itemRevert = itemRepo.findByItemNameAndStorage_Name(
                 cancelledOperation.getProductName(),
-                storageRepo.getReferenceByName(cancelledOperation.getStorageName()).getId()
-        ).orElseThrow(
-                () -> new ProductNotFoundException(
-                        "Такого товара нет, хотя так не должно быть...",
-                        cancelledOperation.getStorageName(),
-                        cancelledOperation.getProductName()
+                cancelledOperation.getStorageName()
+        ).orElseThrow(() -> new ProductNotFoundException(
+                "Товар из отменяемой операции не найден на складе",
+                cancelledOperation.getStorageName(),
+                cancelledOperation.getProductName()
         ));
 
         //Возвращаем все как было до операции
@@ -144,7 +133,7 @@ public class OperationService {
             case ADMISSION -> {
                 try{
                     itemRevert.subtractCount(cancelledOperation.getAmount());
-                } catch (RuntimeException e){
+                } catch (IllegalSellOrWriteOffCount e){
                     throw new OperationCancelException(
                             "Ошибка возврата поступления - продукта на складе не хватает для списания.",
                             cancelledOperationId
