@@ -130,7 +130,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>petr.warehouse.inventory_management.WarehouseInventoryManagementApplication</mainClass>  <!-- твой главный класс -->
+                    <mainClass>petr.warehouse.products_service.WarehouseInventoryManagementApplication</mainClass>  <!-- твой главный класс -->
                 </configuration>
                 <executions>
                     <execution>
