@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import petr.warehouse.products_service.dto.OperationDto;
 import petr.warehouse.products_service.dto.OperationRequestDto;
-import petr.warehouse.products_service.exception.data.IllegalSellOrWriteOffCount;
+import petr.warehouse.products_service.exception.data.InsufficientStockException;
 import petr.warehouse.products_service.exception.data.OperationCancelException;
 import petr.warehouse.products_service.exception.data.OperationNotFound;
 import petr.warehouse.products_service.exception.data.ProductNotFoundException;
@@ -133,7 +133,7 @@ public class OperationService {
             case ADMISSION -> {
                 try{
                     itemRevert.subtractCount(cancelledOperation.getAmount());
-                } catch (IllegalSellOrWriteOffCount e){
+                } catch (InsufficientStockException e){
                     throw new OperationCancelException(
                             "Ошибка возврата поступления - продукта на складе не хватает для списания.",
                             cancelledOperationId

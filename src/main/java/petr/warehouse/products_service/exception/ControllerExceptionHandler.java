@@ -68,7 +68,7 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler
-    public ProblemDetail handleProductIllegalOperation(IllegalSellOrWriteOffCount e, WebRequest webRequest){
+    public ProblemDetail handleProductIllegalOperation(InsufficientStockException e, WebRequest webRequest){
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 "На складе недостаточно товара");
