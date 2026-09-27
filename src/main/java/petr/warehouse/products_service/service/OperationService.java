@@ -88,8 +88,7 @@ public class OperationService {
 
                 opRepo.save(sellOrWriteOffOperation);
             }
-            case CANCELLATION -> throw new OperationCancelException(
-                    "Нельзя создать операцию типа CANCELLATION напрямую", (long) -1);
+            case CANCELLATION -> throw new IllegalStateException("CANCELLATION не должна дойти до сервиса");
         }
     }
 
