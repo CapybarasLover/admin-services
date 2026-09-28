@@ -27,6 +27,9 @@ NBSP = " "
 MINUS = "−" if has_glyph(FONT, 0x2212) else "-"
 # Если шрифт не знает знака рубля, пишем словом, а не квадратом.
 CURRENCY = "₽" if has_glyph(FONT, 0x20BD) else "руб."
+# Перед каждой подписью в интерфейсе стоит короткая засечка; в PDF её роль
+# играет глиф — брусок, если шрифт его знает, иначе длинное тире.
+MARK = "▬" if has_glyph(FONT, 0x25AC) else "—"
 
 STATUS_LABEL = {
     "OUT": "Закончился",
@@ -74,7 +77,7 @@ def _styles(palette: Palette) -> SimpleNamespace:
     return SimpleNamespace(
         title=style("title", fontName=FONT_BOLD, fontSize=18, leading=22),
         subtitle=style("subtitle", fontSize=10, leading=14, textColor=palette.muted),
-        section=style("section", fontName=FONT_BOLD, fontSize=12, leading=16, spaceAfter=6),
+        section=style("section", fontName=FONT_BOLD, fontSize=8.5, leading=11, textColor=palette.muted, spaceAfter=7),
         cell=style("cell"),
         cell_right=style("cellRight", alignment=TA_RIGHT),
         head=style("head", fontName=FONT_BOLD, fontSize=8, textColor=palette.muted),
@@ -83,6 +86,14 @@ def _styles(palette: Palette) -> SimpleNamespace:
         kpi_label=style("kpiLabel", fontName=FONT_BOLD, fontSize=7, textColor=palette.muted),
         kpi_hint=style("kpiHint", fontSize=7, leading=9, textColor=palette.muted),
         counter=style("counter", fontSize=12, leading=15),
+    )
+
+
+def eyebrow(palette: Palette, style: ParagraphStyle, text: str) -> Paragraph:
+    """Подпись в верхнем регистре с фирменной засечкой — как на экране."""
+    return Paragraph(
+        f'<font color="{hex_of(palette.brand)}">{MARK}</font>{NBSP}{NBSP}{text.upper()}',
+        style,
     )
 
 
@@ -113,11 +124,11 @@ def _kpi_card(
         fontName=FONT_BOLD,
         fontSize=size,
         leading=size * 1.22,
-        textColor=value_color or palette.ink,
+        textColor=value_color or palette.brand,
     )
     inner = Table(
         [
-            [Paragraph(label.upper(), s.kpi_label)],
+            [eyebrow(palette, s.kpi_label, label)],
             [Paragraph(value, value_style)],
             [Paragraph(hint, s.kpi_hint)],
         ],
@@ -134,6 +145,7 @@ def _kpi_card(
                 ("TOPPADDING", (0, 1), (0, -1), 3),
                 ("BOTTOMPADDING", (0, 0), (0, -2), 3),
                 ("BOX", (0, 0), (-1, -1), 0.6, palette.line),
+                ("LINEABOVE", (0, 0), (-1, 0), 1.4, palette.brand),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ]
         )
@@ -146,8 +158,10 @@ def _counters_strip(palette: Palette, s: SimpleNamespace, stats, width: float) -
 
     def cell(label: str, count: int, total: int, verb: str) -> Paragraph:
         return Paragraph(
-            f'<font size="7" color="{hex_of(palette.muted)}">{label.upper()}</font><br/>'
-            f"{number(count)}"
+            f'<font size="7" color="{hex_of(palette.brand)}">{MARK}</font>'
+            f'<font size="7" color="{hex_of(palette.muted)}">'
+            f"{NBSP}{NBSP}{label.upper()}</font><br/>"
+            f'<font color="{hex_of(palette.brand)}">{number(count)}</font>'
             f'<font size="9" color="{hex_of(palette.muted)}">'
             f"{NBSP}{NBSP}·{NBSP}{NBSP}{number(total)}{NBSP}шт. {verb}</font>",
             s.counter,
@@ -201,7 +215,7 @@ def _data_table(palette: Palette, header: list, rows: list[list], col_widths: li
         ("FONTSIZE", (0, 0), (-1, -1), 9),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("ALIGN", (right_from, 0), (-1, -1), "RIGHT"),
-        ("LINEBELOW", (0, 0), (-1, 0), 0.6, palette.line),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.6, palette.line_2),
         ("LINEBELOW", (0, 1), (-1, -2), 0.3, palette.line),
         ("TOPPADDING", (0, 0), (-1, -1), 5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
@@ -213,6 +227,10 @@ def _data_table(palette: Palette, header: list, rows: list[list], col_widths: li
             style.append(("BACKGROUND", (0, index), (-1, index), palette.zebra))
     table.setStyle(TableStyle(style))
     return table
+
+
+def _head(s: SimpleNamespace, text: str, right: bool = False) -> Paragraph:
+    return Paragraph(text.upper(), s.head_right if right else s.head)
 
 
 def _ops_cell(palette: Palette, s: SimpleNamespace, ops: int, total: int) -> Paragraph:
@@ -287,16 +305,16 @@ def render_report(report: SummaryReport, theme: str = "light") -> bytes:
     story.append(_counters_strip(palette, s, stats, width))
     story.append(Spacer(1, 9 * mm))
 
-    story.append(Paragraph("По товарам", s.section))
+    story.append(eyebrow(palette, s.section, "По товарам"))
     if report.productStats:
         header = [
-            Paragraph("Товар", s.head),
-            Paragraph("Поступления", s.head_right),
-            Paragraph("Продажи", s.head_right),
-            Paragraph("Списания", s.head_right),
-            Paragraph("Затраты", s.head_right),
-            Paragraph("Выручка", s.head_right),
-            Paragraph("Прибыль", s.head_right),
+            _head(s, "Товар"),
+            _head(s, "Поступления", right=True),
+            _head(s, "Продажи", right=True),
+            _head(s, "Списания", right=True),
+            _head(s, "Затраты", right=True),
+            _head(s, "Выручка", right=True),
+            _head(s, "Прибыль", right=True),
         ]
         rows = []
         ordered = sorted(report.productStats.items(), key=lambda kv: kv[1].productRevenue, reverse=True)
@@ -323,14 +341,14 @@ def render_report(report: SummaryReport, theme: str = "light") -> bytes:
 
     story.append(Spacer(1, 9 * mm))
 
-    stock_block = [Paragraph("Остатки на момент формирования", s.section)]
+    stock_block = [eyebrow(palette, s.section, "Остатки на момент формирования")]
     if report.currentStock:
         header = [
-            Paragraph("Товар", s.head),
-            Paragraph("Остаток", s.head_right),
-            Paragraph("Статус", s.head),
-            Paragraph("Цена за ед.", s.head_right),
-            Paragraph("Стоимость остатка", s.head_right),
+            _head(s, "Товар"),
+            _head(s, "Остаток", right=True),
+            _head(s, "Статус"),
+            _head(s, "Цена за ед.", right=True),
+            _head(s, "Стоимость остатка", right=True),
         ]
         rows = []
         for item in sorted(report.currentStock, key=lambda i: i.name):

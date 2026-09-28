@@ -1,7 +1,10 @@
 """Палитры отчёта.
 
 Повторяют цветовой язык интерфейса: светофор остатков и знак результата
-означают в PDF то же самое, что на экране.
+означают в PDF то же самое, что на экране. Цвета сняты с токенов фронтенда
+(frontend/src/index.css), а не подобраны отдельно: фирменный фиолетовый
+#8D67E3 работает двумя значениями — заливки и линии отдельно от акцента в
+тексте, потому что одно значение не проходит по контрасту в обеих ролях.
 """
 
 from dataclasses import dataclass
@@ -20,7 +23,10 @@ class Palette:
     ink: Color
     muted: Color
     line: Color
+    line_2: Color
     zebra: Color
+    brand: Color
+    brand_ink: Color
     positive: Color
     negative: Color
     status_out: Color
@@ -43,31 +49,39 @@ class Palette:
 
 
 LIGHT = Palette(
-    page=colors.HexColor("#ffffff"),
-    card=colors.HexColor("#ffffff"),
-    ink=colors.HexColor("#111111"),
-    muted=colors.HexColor("#6b7280"),
-    line=colors.HexColor("#e5e7eb"),
-    zebra=colors.HexColor("#fafafa"),
-    positive=colors.HexColor("#15803d"),
-    negative=colors.HexColor("#b91c1c"),
-    status_out=colors.HexColor("#b91c1c"),
-    status_few=colors.HexColor("#b45309"),
-    status_enough=colors.HexColor("#15803d"),
+    page=colors.HexColor("#FAFAFD"),
+    card=colors.HexColor("#FFFFFF"),
+    ink=colors.HexColor("#14121B"),
+    muted=colors.HexColor("#6A6676"),
+    line=colors.HexColor("#E2E1E7"),
+    line_2=colors.HexColor("#CECCD7"),
+    zebra=colors.HexColor("#F3F1F8"),
+    brand=colors.HexColor("#7F58D8"),
+    brand_ink=colors.HexColor("#6338B9"),
+    positive=colors.HexColor("#007746"),
+    negative=colors.HexColor("#C22630"),
+    status_out=colors.HexColor("#C22630"),
+    status_few=colors.HexColor("#A16100"),
+    status_enough=colors.HexColor("#007746"),
 )
 
+# Границы интерфейса на тёмном полупрозрачные; в PDF прозрачности не место,
+# поэтому те же 10% и 20% белого уже смешаны с подложкой карточки.
 DARK = Palette(
-    page=colors.HexColor("#161616"),
-    card=colors.HexColor("#1f1f1f"),
-    ink=colors.HexColor("#f5f5f5"),
-    muted=colors.HexColor("#a1a1aa"),
-    line=colors.HexColor("#3a3a3a"),
-    zebra=colors.HexColor("#1c1c1c"),
-    positive=colors.HexColor("#4ade80"),
-    negative=colors.HexColor("#f87171"),
-    status_out=colors.HexColor("#f87171"),
-    status_few=colors.HexColor("#fbbf24"),
-    status_enough=colors.HexColor("#4ade80"),
+    page=colors.HexColor("#0D0C10"),
+    card=colors.HexColor("#16151B"),
+    ink=colors.HexColor("#F2F0F7"),
+    muted=colors.HexColor("#8B8799"),
+    line=colors.HexColor("#2C2B31"),
+    line_2=colors.HexColor("#3B3A3E"),
+    zebra=colors.HexColor("#16151B"),
+    brand=colors.HexColor("#8D67E3"),
+    brand_ink=colors.HexColor("#A98CEC"),
+    positive=colors.HexColor("#55D391"),
+    negative=colors.HexColor("#EF6B6B"),
+    status_out=colors.HexColor("#EF6B6B"),
+    status_few=colors.HexColor("#F0B23E"),
+    status_enough=colors.HexColor("#55D391"),
 )
 
 PALETTES: dict[str, Palette] = {"light": LIGHT, "dark": DARK}

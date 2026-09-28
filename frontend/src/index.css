@@ -3,86 +3,113 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root {
-  --radius: 0.65rem;
+/* ==========================================================================
+   Палитра снята с интерфейса Talant, а не подобрана на глаз: фиолетовый
+   #8D67E3 — единственный цвет бренда, и он работает тремя значениями, потому
+   что одно не проходит по контрасту во всех трёх ролях: заливка кнопки,
+   акцент в тексте и крупная цифра — три разные задачи.
 
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.145 0 0);
+   Светофор остатков и типы операций живут ОТДЕЛЬНО от бренда: «закончился /
+   заканчивается / в наличии» — это состояние товара, а не акцент бренда.
+   Поэтому продажа ушла в пурпур (345°), подальше от фирменных 294°: иначе
+   бейдж операции спорил бы с кнопкой за одно и то же значение.
+
+   Радиусы кратны талантовским: чип 8, кнопка 12, карточка 16.
+   ========================================================================== */
+
+:root {
+  --radius: 0.75rem;
+
+  --background: oklch(0.985 0.004 296);
+  --foreground: oklch(0.19 0.018 295);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.19 0.018 295);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.19 0.018 295);
+  --primary: oklch(0.5669 0.1877 293.6);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.962 0.008 296);
+  --secondary-foreground: oklch(0.3 0.05 295);
+  --muted: oklch(0.965 0.006 296);
+  --muted-foreground: oklch(0.52 0.025 296);
+  --accent: oklch(0.951 0.022 296);
+  --accent-foreground: oklch(0.36 0.13 294);
+  --destructive: oklch(0.55 0.2 24);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.912 0.008 296);
+  --input: oklch(0.912 0.008 296);
+  --ring: oklch(0.5669 0.1877 293.6);
+
+  /* Три роли фирменного цвета. */
+  --brand: oklch(0.5669 0.1877 293.6);      /* заливки и крупные цифры */
+  --brand-ink: oklch(0.47 0.19 293);        /* акцент в тексте обычного кегля */
+  --violet: oklch(0.951 0.026 296);         /* фиолетовый контейнер */
+  --line-2: oklch(0.85 0.016 296);          /* граница «второй ступени» */
 
   /* Светофор остатков и типы операций. Держим тут, чтобы бейджи,
      плитки и таблицы говорили одним цветом об одном и том же. */
-  --status-out: oklch(0.577 0.245 27.325);
-  --status-out-bg: oklch(0.955 0.035 25);
-  --status-few: oklch(0.648 0.17 70);
-  --status-few-bg: oklch(0.96 0.045 85);
-  --status-enough: oklch(0.6 0.13 155);
-  --status-enough-bg: oklch(0.955 0.04 155);
+  --status-out: oklch(0.53 0.19 24);
+  --status-out-bg: oklch(0.955 0.03 24);
+  --status-few: oklch(0.55 0.13 70);
+  --status-few-bg: oklch(0.958 0.04 82);
+  --status-enough: oklch(0.5 0.12 157);
+  --status-enough-bg: oklch(0.955 0.035 157);
 
-  --op-admission: oklch(0.55 0.16 255);
-  --op-admission-bg: oklch(0.955 0.03 255);
-  --op-sell: oklch(0.55 0.18 305);
-  --op-sell-bg: oklch(0.96 0.03 305);
-  --op-writeoff: oklch(0.577 0.245 27.325);
-  --op-writeoff-bg: oklch(0.955 0.035 25);
+  --op-admission: oklch(0.5 0.16 253);
+  --op-admission-bg: oklch(0.952 0.03 253);
+  --op-sell: oklch(0.53 0.18 345);
+  --op-sell-bg: oklch(0.955 0.028 345);
+  --op-writeoff: oklch(0.53 0.19 24);
+  --op-writeoff-bg: oklch(0.955 0.03 24);
 
-  --positive: oklch(0.55 0.14 155);
-  --negative: oklch(0.577 0.245 27.325);
+  --positive: oklch(0.5 0.12 157);
+  --negative: oklch(0.53 0.19 24);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: oklch(0.1575 0.0085 296.9);
+  --foreground: oklch(0.9587 0.0095 299.2);
+  --card: oklch(0.1996 0.012 292.9);
+  --card-foreground: oklch(0.9587 0.0095 299.2);
+  --popover: oklch(0.2327 0.0174 295.2);
+  --popover-foreground: oklch(0.9587 0.0095 299.2);
+  --primary: oklch(0.5669 0.1877 293.6);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.2327 0.0174 295.2);
+  --secondary-foreground: oklch(0.9587 0.0095 299.2);
+  --muted: oklch(0.2327 0.0174 295.2);
+  --muted-foreground: oklch(0.6329 0.027 295.8);
+  --accent: oklch(0.2361 0.0387 299.5);
+  --accent-foreground: oklch(0.7051 0.1394 296.6);
+  --destructive: oklch(0.6885 0.1636 22.3);
+  --destructive-foreground: oklch(0.15 0.01 297);
+  /* Границы на тёмном — волосяные и полупрозрачные: на подложке и на
+     приподнятой карточке одна и та же линия должна читаться одинаково. */
+  --border: oklch(0.9587 0.0095 299.2 / 10%);
+  --input: oklch(0.9587 0.0095 299.2 / 14%);
+  --ring: oklch(0.6112 0.1811 294.6);
 
-  --status-out: oklch(0.75 0.16 25);
-  --status-out-bg: oklch(0.3 0.07 25);
-  --status-few: oklch(0.82 0.15 80);
-  --status-few-bg: oklch(0.32 0.06 75);
-  --status-enough: oklch(0.78 0.14 155);
-  --status-enough-bg: oklch(0.29 0.06 155);
+  --brand: oklch(0.6112 0.1811 294.6);
+  --brand-ink: oklch(0.7051 0.1394 296.6);
+  --violet: oklch(0.2361 0.0387 299.5);
+  --line-2: oklch(0.9587 0.0095 299.2 / 20%);
 
-  --op-admission: oklch(0.78 0.12 255);
-  --op-admission-bg: oklch(0.3 0.07 255);
-  --op-sell: oklch(0.79 0.13 305);
-  --op-sell-bg: oklch(0.31 0.07 305);
-  --op-writeoff: oklch(0.75 0.16 25);
-  --op-writeoff-bg: oklch(0.3 0.07 25);
+  --status-out: oklch(0.6885 0.1636 22.3);
+  --status-out-bg: oklch(0.285 0.06 22);
+  --status-few: oklch(0.8019 0.1454 79.1);
+  --status-few-bg: oklch(0.295 0.055 75);
+  --status-enough: oklch(0.7793 0.1475 157.3);
+  --status-enough-bg: oklch(0.275 0.055 157);
 
-  --positive: oklch(0.78 0.14 155);
-  --negative: oklch(0.75 0.16 25);
+  --op-admission: oklch(0.75 0.125 253);
+  --op-admission-bg: oklch(0.285 0.06 253);
+  --op-sell: oklch(0.76 0.14 345);
+  --op-sell-bg: oklch(0.3 0.065 345);
+  --op-writeoff: oklch(0.6885 0.1636 22.3);
+  --op-writeoff-bg: oklch(0.285 0.06 22);
+
+  --positive: oklch(0.7793 0.1475 157.3);
+  --negative: oklch(0.6885 0.1636 22.3);
 }
 
 @theme inline {
@@ -105,6 +132,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-violet: var(--violet);
+  --color-line-2: var(--line-2);
 
   --color-status-out: var(--status-out);
   --color-status-out-bg: var(--status-out-bg);
@@ -146,8 +178,128 @@
       "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
+
+  /* Фокус одной меркой на всё приложение — фирменным цветом, с отступом,
+     чтобы кольцо не липло к границе поля. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
   /* Числа в таблицах должны выстраиваться в колонку по разрядам. */
   .tabular {
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+}
+
+@layer components {
+  /* Надзаголовок с засечкой — одна мера разметки на весь интерфейс: ею
+     помечены и заголовки плиток, и подписи секций. */
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .eyebrow--mark::before {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 2px;
+    margin-right: 8px;
+    vertical-align: 3px;
+    background: currentColor;
+  }
+
+  /* Заголовок-плакат: кегль растёт — межбуквенное сжимается. */
+  .display {
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  /* Кант светится сверху: заливка в padding-box, градиент в border-box.
+     Тени под карточкой нет намеренно — на тёмном она читается грязным
+     пятном, поверхности разделяет граница и высота подложки. */
+  .card-glow {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--card), var(--card)) padding-box,
+      radial-gradient(
+          220px circle at 50% 0%,
+          color-mix(in oklab, var(--brand) 45%, transparent),
+          var(--border) 60%
+        )
+        border-box;
+  }
+}
+
+/* Зерно. Тёмные градиенты на 8-битном экране идут полосами, и зерно их
+   разбивает — это лечение бандинга, а не просто фактура. Слой не ловит
+   события и не попадает в поток. На светлой теме не нужен: там полос нет. */
+.dark body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* Подсветка входного экрана: два пятна с разным периодом не попадают в такт,
+   и повтор цикла не читается. Двигаются только transform и opacity —
+   композитор справляется без перерисовки слоя. */
+.aurora {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.aurora span {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform, opacity;
+  background: color-mix(in oklab, var(--brand) 28%, transparent);
+}
+
+.aurora span:nth-child(1) {
+  width: 44vw;
+  height: 44vw;
+  top: -16vw;
+  right: -8vw;
+  animation: drift-a 22s ease-in-out infinite;
+}
+
+.aurora span:nth-child(2) {
+  width: 32vw;
+  height: 32vw;
+  bottom: -14vw;
+  left: -6vw;
+  opacity: 0.7;
+  animation: drift-b 29s ease-in-out infinite;
+}
+
+@keyframes drift-a {
+  50% {
+    transform: translate(-5vw, 4vw) scale(1.15);
+    opacity: 0.75;
+  }
+}
+@keyframes drift-b {
+  50% {
+    transform: translate(6vw, -3vw) scale(0.88);
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora span {
+    animation: none;
   }
 }

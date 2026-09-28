@@ -15,10 +15,10 @@ export function SheetContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & { title: string }) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=open]:fade-in-0" />
       <DialogPrimitive.Content
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-[min(20rem,85vw)] flex-col border-r bg-background shadow-lg',
+          'fixed inset-y-0 left-0 z-50 flex w-[min(20rem,85vw)] flex-col border-r bg-card shadow-2xl shadow-black/40',
           'data-[state=open]:animate-in data-[state=open]:slide-in-from-left',
           className,
         )}

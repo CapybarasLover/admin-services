@@ -30,9 +30,11 @@ export function StorageSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-2 px-4 py-4">
-        <Warehouse className="size-4 shrink-0 text-muted-foreground" />
-        <span className="flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Склады</span>
+      <div className="flex items-center gap-2.5 px-4 py-4">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-violet text-brand-ink">
+          <Warehouse className="size-4" />
+        </span>
+        <span className="eyebrow flex-1">Склады</span>
         <Button
           variant="ghost"
           size="icon"
@@ -73,12 +75,14 @@ export function StorageSidebar({ onNavigate }: { onNavigate?: () => void }) {
                     onClick={onNavigate}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
-                      active ? 'bg-accent font-medium text-accent-foreground' : 'hover:bg-accent/60',
+                      'flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
+                      active
+                        ? 'bg-violet font-semibold text-accent-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
                     )}
                   >
                     <span className="truncate">{storage.name}</span>
-                    {active ? <span aria-hidden className="ml-auto size-1.5 rounded-full bg-foreground" /> : null}
+                    {active ? <span aria-hidden className="ml-auto size-1.5 rounded-full bg-brand" /> : null}
                   </Link>
                 </li>
               )

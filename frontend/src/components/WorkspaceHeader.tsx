@@ -31,7 +31,7 @@ export function WorkspaceHeader({ storageId, storage, isLoading }: WorkspaceHead
         {isLoading ? (
           <Skeleton className="h-7 w-52" />
         ) : (
-          <h1 className="text-xl font-semibold tracking-tight">{storage?.name ?? 'Склад'}</h1>
+          <h1 className="display text-2xl">{storage?.name ?? 'Склад'}</h1>
         )}
 
         {storage ? (
@@ -57,17 +57,17 @@ export function WorkspaceHeader({ storageId, storage, isLoading }: WorkspaceHead
         ) : null}
       </div>
 
-      <nav className="-mb-px mt-4 flex gap-1" aria-label="Разделы склада">
+      <nav className="mt-4 flex gap-1 pb-3" aria-label="Разделы склада">
         {TAB_LINKS.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
             className={({ isActive }) =>
               cn(
-                'border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                'rounded-lg px-3.5 py-2 text-[0.8125rem] font-semibold transition-colors',
                 isActive
-                  ? 'border-foreground text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground',
+                  ? 'bg-violet text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
               )
             }
           >
@@ -101,7 +101,7 @@ function SummaryChip({
         to={active ? `/storages/${storageId}/items` : `/storages/${storageId}/items?status=${status}`}
         aria-pressed={active}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors',
+          'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] transition-colors',
           meta.badgeClassName,
           active ? 'ring-2 ring-ring ring-offset-1 ring-offset-background' : 'hover:opacity-80',
         )}

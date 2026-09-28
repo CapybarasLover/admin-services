@@ -13,11 +13,11 @@ export function AlertDialogContent({
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
   return (
     <AlertDialogPrimitive.Portal>
-      <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+      <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=open]:fade-in-0" />
       <AlertDialogPrimitive.Content
         className={cn(
           'fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4',
-          'rounded-xl border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=open]:zoom-in-95',
+          'rounded-xl border border-line-2 bg-popover p-6 shadow-2xl shadow-black/40 data-[state=open]:animate-in data-[state=open]:zoom-in-95',
           className,
         )}
         {...props}
@@ -37,7 +37,7 @@ export function AlertDialogFooter({ className, ...props }: React.ComponentProps<
 }
 
 export function AlertDialogTitle({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
-  return <AlertDialogPrimitive.Title className={cn('text-lg font-semibold', className)} {...props} />
+  return <AlertDialogPrimitive.Title className={cn('display text-lg', className)} {...props} />
 }
 
 export function AlertDialogDescription({

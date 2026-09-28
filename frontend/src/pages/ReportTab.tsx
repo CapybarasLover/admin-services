@@ -130,7 +130,7 @@ export function ReportTab() {
           <ReportKpis report={report} />
 
           <section className="rounded-xl border bg-card">
-            <h2 className="border-b px-4 py-3 text-sm font-semibold">По товарам</h2>
+            <h2 className="eyebrow eyebrow--mark border-b px-4 py-3.5">По товарам</h2>
             {empty || !productRows.length ? (
               <EmptyState
                 icon={Inbox}
@@ -182,7 +182,7 @@ export function ReportTab() {
           </section>
 
           <section className="rounded-xl border bg-card">
-            <h2 className="border-b px-4 py-3 text-sm font-semibold">Остатки на сейчас</h2>
+            <h2 className="eyebrow eyebrow--mark border-b px-4 py-3.5">Остатки на сейчас</h2>
             {!report.currentStock.length ? (
               <EmptyState icon={Inbox} title="На складе нет позиций" />
             ) : (

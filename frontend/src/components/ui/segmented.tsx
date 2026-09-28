@@ -28,7 +28,7 @@ export function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className={cn('flex w-full flex-wrap gap-1 rounded-lg bg-muted p-1', className)}
+      className={cn('flex w-full flex-wrap gap-1 rounded-lg border bg-muted/60 p-1', className)}
     >
       {options.map((option) => {
         const active = option.value === value
@@ -44,7 +44,7 @@ export function Segmented<T extends string>({
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               size === 'sm' ? 'h-7 text-xs' : 'h-8 text-sm',
               active
-                ? cn('bg-background shadow-sm', option.activeClassName)
+                ? cn('bg-violet text-accent-foreground', option.activeClassName)
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
