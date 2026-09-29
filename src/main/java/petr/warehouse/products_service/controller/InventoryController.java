@@ -112,4 +112,13 @@ public class InventoryController {
         operationService.cancelOperation(operationId);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
+
+    @PatchMapping("/{storageId}/products/{productId}")
+    public ResponseEntity<?> editProductDetails(
+            @RequestParam @Positive BigDecimal productCost,
+            @RequestParam @Positive Integer priceThreshold,
+            @PathVariable Long storageId, @PathVariable Long productId){
+        storageService.editProduct(storageId, productId, productCost, priceThreshold);
+        return ResponseEntity.ok().build();
+    }
 }
