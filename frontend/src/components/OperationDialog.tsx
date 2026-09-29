@@ -11,15 +11,12 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Segmented } from '@/components/ui/segmented'
 import { useExecuteOperation } from '@/hooks/useOperations'
 import { LIMITS, OPERATION_META } from '@/lib/constants'
 import { showApiError } from '@/lib/errors'
 import { formatMoney, pieces } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { ExecutableOperationType, StorageItemDto } from '@/types/api'
-
-type CostMode = 'unit' | 'batch'
 
 interface OperationDialogProps {
   storageId: number
@@ -40,21 +37,17 @@ function toNumber(raw: string) {
 export function OperationDialog({ storageId, storageName, item, type, onClose }: OperationDialogProps) {
   const [count, setCount] = useState('')
   const [comment, setComment] = useState('')
-  const [costMode, setCostMode] = useState<CostMode>('unit')
-  const [unitPrice, setUnitPrice] = useState('')
-  const [batchPrice, setBatchPrice] = useState('')
+  const [admissionCost, setAdmissionCost] = useState('')
   const execute = useExecuteOperation(storageId)
 
   const open = item !== null && type !== null
 
-  // Каждое открытие — чистая форма; цена за единицу подставляется из карточки.
+  // Каждое открытие — чистая форма.
   useEffect(() => {
     if (!open || !item) return
     setCount('')
     setComment('')
-    setCostMode('unit')
-    setUnitPrice(String(item.cost ?? ''))
-    setBatchPrice('')
+    setAdmissionCost('')
   }, [open, item])
 
   if (!open || !item || !type) return null
@@ -67,18 +60,13 @@ export function OperationDialog({ storageId, storageName, item, type, onClose }:
   const countValid = count !== '' && Number.isInteger(parsedCount) && parsedCount > 0
   const exceedsStock = !isAdmission && countValid && parsedCount > available
 
-  const parsedUnitPrice = toNumber(unitPrice)
-  const parsedBatchPrice = toNumber(batchPrice)
-
-  // В API всегда уходит стоимость всей партии — как её ни ввели.
+  // Поступление записывается только полной суммой: цена в карточке товара —
+  // это цена продажи, умножать её на количество закупки бессмысленно.
+  const parsedAdmissionCost = toNumber(admissionCost)
   const admissionTotal =
-    costMode === 'unit'
-      ? countValid && Number.isFinite(parsedUnitPrice) && parsedUnitPrice > 0
-        ? round2(parsedUnitPrice * parsedCount)
-        : null
-      : Number.isFinite(parsedBatchPrice) && parsedBatchPrice > 0
-        ? round2(parsedBatchPrice)
-        : null
+    admissionCost !== '' && Number.isFinite(parsedAdmissionCost) && parsedAdmissionCost > 0
+      ? round2(parsedAdmissionCost)
+      : null
 
   const settlementTotal = countValid ? round2(item.cost * parsedCount) : null
 
@@ -123,7 +111,9 @@ export function OperationDialog({ storageId, storageName, item, type, onClose }:
             <span className="truncate">{item.name}</span>
           </DialogTitle>
           <DialogDescription>
-            Склад «{storageName}» · цена в карточке {formatMoney(item.cost)} за единицу
+            {isAdmission
+              ? `Склад «${storageName}»`
+              : `Склад «${storageName}» · цена в карточке ${formatMoney(item.cost)} за единицу`}
           </DialogDescription>
         </DialogHeader>
 
@@ -156,15 +146,7 @@ export function OperationDialog({ storageId, storageName, item, type, onClose }:
           </div>
 
           {isAdmission ? (
-            <AdmissionCostFields
-              costMode={costMode}
-              onCostModeChange={setCostMode}
-              unitPrice={unitPrice}
-              onUnitPriceChange={setUnitPrice}
-              batchPrice={batchPrice}
-              onBatchPriceChange={setBatchPrice}
-              total={admissionTotal}
-            />
+            <AdmissionCostFields value={admissionCost} onChange={setAdmissionCost} />
           ) : (
             <div className="space-y-1.5">
               <Label htmlFor="operation-settlement">
@@ -220,76 +202,32 @@ export function OperationDialog({ storageId, storageName, item, type, onClose }:
 }
 
 /**
- * Бэкенд ждёт стоимость ВСЕЙ партии. Ввести цену за штуку в это поле —
- * самая дорогая ошибка на экране, поэтому способ ввода выбирается явно,
- * а итог всегда показан крупно.
+ * Бэкенд ждёт стоимость ВСЕЙ партии, и ввести её можно только руками:
+ * цена в карточке товара — это цена продажи, считать по ней закупку нельзя.
  */
 function AdmissionCostFields({
-  costMode,
-  onCostModeChange,
-  unitPrice,
-  onUnitPriceChange,
-  batchPrice,
-  onBatchPriceChange,
-  total,
+  value,
+  onChange,
 }: {
-  costMode: CostMode
-  onCostModeChange: (mode: CostMode) => void
-  unitPrice: string
-  onUnitPriceChange: (value: string) => void
-  batchPrice: string
-  onBatchPriceChange: (value: string) => void
-  total: number | null
+  value: string
+  onChange: (value: string) => void
 }) {
   return (
-    <div className="space-y-2 rounded-lg border p-3">
-      <Segmented<CostMode>
-        label="Способ ввода стоимости"
-        size="sm"
-        value={costMode}
-        onValueChange={onCostModeChange}
-        options={[
-          { value: 'unit', label: 'Цена за единицу' },
-          { value: 'batch', label: 'Сумма за партию' },
-        ]}
+    <div className="space-y-1.5">
+      <Label htmlFor="admission-total">Сумма поступления, ₽</Label>
+      <Input
+        id="admission-total"
+        type="number"
+        inputMode="decimal"
+        min="0"
+        step="0.01"
+        placeholder="Сколько заплатили за всю партию"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
       />
-
-      {costMode === 'unit' ? (
-        <div className="space-y-1.5">
-          <Label htmlFor="admission-unit-price">Цена закупки за единицу, ₽</Label>
-          <Input
-            id="admission-unit-price"
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            value={unitPrice}
-            onChange={(event) => onUnitPriceChange(event.target.value)}
-          />
-        </div>
-      ) : (
-        <div className="space-y-1.5">
-          <Label htmlFor="admission-batch-price">Сумма за всю партию, ₽</Label>
-          <Input
-            id="admission-batch-price"
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            value={batchPrice}
-            onChange={(event) => onBatchPriceChange(event.target.value)}
-          />
-        </div>
-      )}
-
-      <div className="rounded-md bg-muted px-3 py-2">
-        <p className="text-xs text-muted-foreground">Стоимость всей партии</p>
-        <p className="tabular text-lg font-semibold">{total === null ? '—' : formatMoney(total)}</p>
-      </div>
-
       <p className="text-xs text-muted-foreground">
-        Цена в карточке товара при поступлении не пересчитывается — продажи и списания
-        по-прежнему считаются по ней.
+        Полная стоимость закупки целиком, а не цена за штуку. Цена в карточке товара при
+        поступлении не пересчитывается.
       </p>
     </div>
   )

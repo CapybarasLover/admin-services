@@ -66,7 +66,13 @@ interface RequestOptions {
   body?: unknown
   signal?: AbortSignal
   accept?: string
+  timeoutMs?: number
 }
+
+// У fetch нет своего таймаута: зависший запрос не отваливается никогда,
+// и интерфейс остаётся в «загрузке» без единого сообщения. Поэтому режем сами.
+const DEFAULT_TIMEOUT_MS = 30_000
+const DOWNLOAD_TIMEOUT_MS = 60_000
 
 async function toApiError(response: Response): Promise<ApiError> {
   let payload: { title?: string; detail?: string; errors?: FieldError[] } = {}
@@ -87,18 +93,46 @@ async function toApiError(response: Response): Promise<ApiError> {
 }
 
 async function send(path: string, options: RequestOptions = {}): Promise<Response> {
-  const { method = 'GET', params, body, signal, accept = 'application/json' } = options
+  const {
+    method = 'GET',
+    params,
+    body,
+    signal,
+    accept = 'application/json',
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  } = options
 
   const headers: Record<string, string> = { Accept: accept }
   if (authToken) headers.Authorization = `Bearer ${authToken}`
   if (body !== undefined) headers['Content-Type'] = 'application/json'
 
-  const response = await fetch(buildUrl(path, params), {
-    method,
-    headers,
-    signal,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
+  // Свой контроллер: он же гасит запрос по таймауту, он же пробрасывает отмену снаружи
+  // (react-query отменяет запросы при уходе со страницы — это не ошибка, а штатный случай).
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const forwardAbort = () => controller.abort()
+  signal?.addEventListener('abort', forwardAbort, { once: true })
+
+  let response: Response
+  try {
+    response = await fetch(buildUrl(path, params), {
+      method,
+      headers,
+      signal: controller.signal,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch (cause) {
+    if (controller.signal.aborted && !signal?.aborted) {
+      throw new ApiError(408, {
+        title: 'Сервер не ответил',
+        detail: `Запрос оборван после ${Math.round(timeoutMs / 1000)} с ожидания. Проверьте соединение и повторите.`,
+      })
+    }
+    throw cause
+  } finally {
+    clearTimeout(timer)
+    signal?.removeEventListener('abort', forwardAbort)
+  }
 
   if (!response.ok) {
     if (response.status === 401 && AUTH_ENABLED) {
@@ -120,7 +154,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
 /** Скачивание файла: сохраняем имя из Content-Disposition, если бэкенд его прислал. */
 export async function apiDownload(path: string, params: QueryParams, fallbackName: string) {
-  const response = await send(path, { params, accept: '*/*' })
+  const response = await send(path, { params, accept: '*/*', timeoutMs: DOWNLOAD_TIMEOUT_MS })
   const blob = await response.blob()
 
   const disposition = response.headers.get('Content-Disposition') ?? ''
@@ -143,5 +177,7 @@ export function triggerDownload(blob: Blob, filename: string) {
   document.body.appendChild(link)
   link.click()
   link.remove()
-  URL.revokeObjectURL(url)
+  // Отзывать blob-ссылку синхронно нельзя: click() только ставит скачивание в очередь,
+  // и к моменту чтения ссылки её уже нет — файл молча не появляется (заметнее всего в Safari).
+  setTimeout(() => URL.revokeObjectURL(url), 40_000)
 }
