@@ -41,10 +41,9 @@ public class ReportService {
 
         List<Object> rawRows = operationRepo.groupOperationsForReport(storageName, from, to, OperationType.CANCELLATION);
 
-        //TODO кастомное исключение
-        if (rawRows.isEmpty()) {
-            throw new RuntimeException("No operations found for the given period");
-        }
+        //Период без операций — обычное дело, а не ошибка сервера: отчёт уезжает с нулями
+        //и текущими остатками. Раньше здесь летел RuntimeException, и /report/summary отдавал 500.
+        //Пустой отчёт уже умеют рисовать и фронт (EmptyState), и python-рендерер («За период операций не было»).
 
         Map<String, SummaryReportDto.ProductStats> productStats = new HashMap<>();
         int totalAdmCount = 0;
