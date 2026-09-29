@@ -41,7 +41,7 @@ export function useCancelOperation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (operationId: number) =>
-      apiRequest<void>(`/storage/operations/${operationId}`, { method: 'DELETE' }),
+      apiRequest<void>(`/storage/operations/${operationId}`, { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storage'] })
       queryClient.invalidateQueries({ queryKey: ['operations'] })

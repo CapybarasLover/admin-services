@@ -15,6 +15,7 @@ public class StorageItemMapper {
         storageItem.setId(dto.getId());
         storageItem.setItemCount(dto.getCount());
         storageItem.setItemName(dto.getName());
+        storageItem.setCost(dto.getCost());
         storageItem.setItemStatus(dto.getStatus());
 
         return storageItem;
@@ -30,6 +31,7 @@ public class StorageItemMapper {
         dto.setId(storageItem.getId());
         dto.setCount(storageItem.getItemCount());
         dto.setName(storageItem.getItemName());
+        dto.setCost(storageItem.getCost());
         dto.setStatus(storageItem.getItemStatus());
 
         return dto;
