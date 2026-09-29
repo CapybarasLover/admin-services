@@ -1,12 +1,14 @@
 package petr.warehouse.products_service.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import petr.warehouse.products_service.event.LowStockEvent;
 import petr.warehouse.products_service.dto.OperationDto;
 import petr.warehouse.products_service.dto.OperationRequestDto;
 import petr.warehouse.products_service.exception.data.InsufficientStockException;
@@ -16,6 +18,7 @@ import petr.warehouse.products_service.exception.data.ProductNotFoundException;
 import petr.warehouse.products_service.exception.request.ZeroOrNullAdmissionCost;
 import petr.warehouse.products_service.filter.OperationFilter;
 import petr.warehouse.products_service.mapper.OperationMapper;
+import petr.warehouse.products_service.model.ItemStatus;
 import petr.warehouse.products_service.model.OperationType;
 import petr.warehouse.products_service.repository.OperationRepo;
 import petr.warehouse.products_service.repository.StorageItemRepo;
@@ -34,17 +37,20 @@ public class OperationService {
     private final OperationRepo opRepo;
     private final StorageItemRepo itemRepo;
     private final OperationMapper operationMapper;
+    private final ApplicationEventPublisher events;
 
     @Autowired
     public OperationService(
             OperationRepo opRepo,
             StorageItemRepo itemRepo,
             OperationMapper operationMapper,
-            StorageRepo storageRepo
+            StorageRepo storageRepo,
+            ApplicationEventPublisher events
     ){
         this.opRepo = opRepo;
         this.itemRepo = itemRepo;
         this.operationMapper = operationMapper;
+        this.events = events;
     }
 
     public void executeOperation(Long storageId, OperationRequestDto requestBody){
@@ -73,6 +79,9 @@ public class OperationService {
                 opRepo.save(admissionOperation);
             }
             case SELL, WRITE_OFF -> {
+                ItemStatus statusBefore = item.getItemStatus();
+                int countBefore = item.getItemCount();
+
                 item.subtractCount(requestBody.getCount());
                 itemRepo.save(item);
 
@@ -87,6 +96,8 @@ public class OperationService {
                 );
 
                 opRepo.save(sellOrWriteOffOperation);
+
+                publishIfRunningLow(item, statusBefore, countBefore);
             }
             case CANCELLATION -> throw new IllegalStateException("CANCELLATION не должна дойти до сервиса");
         }
@@ -127,6 +138,9 @@ public class OperationService {
                 cancelledOperation.getProductName()
         ));
 
+        ItemStatus statusBefore = itemRevert.getItemStatus();
+        int countBefore = itemRevert.getItemCount();
+
         //Возвращаем все как было до операции
         switch (cancelledOperation.getOperationType()){
             case ADMISSION -> {
@@ -155,5 +169,29 @@ public class OperationService {
             throw new OperationCancelException("Операция уже отменена", cancelledOperationId);
         }
 
+        //Отмена поступления так же уводит остаток вниз, как продажа.
+        publishIfRunningLow(itemRevert, statusBefore, countBefore);
+    }
+
+    //Уведомление имеет смысл только когда остаток уехал вниз и упёрся в FEW или OUT.
+    //Пока статус не менялся, повторных сообщений в чат не будет.
+    private void publishIfRunningLow(StorageItem item, ItemStatus statusBefore, int countBefore){
+        ItemStatus statusAfter = item.getItemStatus();
+
+        if(statusAfter == statusBefore || item.getItemCount() >= countBefore){
+            return;
+        }
+        if(statusAfter != ItemStatus.FEW && statusAfter != ItemStatus.OUT){
+            return;
+        }
+
+        events.publishEvent(new LowStockEvent(
+                item.getStorage().getId(),
+                item.getStorage().getName(),
+                item.getId(),
+                item.getItemName(),
+                item.getItemCount(),
+                statusAfter
+        ));
     }
 }

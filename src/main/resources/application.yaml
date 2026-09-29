@@ -21,3 +21,17 @@ report:
     url: ${REPORT_PDF_URL:http://localhost:8000}
     connect-timeout: 5s
     read-timeout: 30s
+
+# Телеграм-бот: пишет в чат, когда товар заканчивается, и записывает поступления.
+# Без telegram.token бот молча не стартует — остальное приложение работает как обычно.
+telegram:
+  enabled: ${TELEGRAM_ENABLED:true}
+  token: ${TELEGRAM_BOT_TOKEN:}
+  # Чат для уведомлений. У группы id отрицательный, узнать можно командой /chatid
+  chat-id: ${TELEGRAM_CHAT_ID:}
+  # Кого тегать в уведомлении, например @dasha. Пинг сработает, только если у человека есть @username
+  mention: ${TELEGRAM_MENTION:}
+  poll-timeout: ${TELEGRAM_POLL_TIMEOUT:25s}
+  # Если с сервера api.telegram.org недоступен — сюда ставится адрес своего
+  # реверс-прокси, см. deploy/telegram-proxy-worker.js
+  api-url: ${TELEGRAM_API_URL:https://api.telegram.org}
