@@ -105,7 +105,8 @@ public class InventoryController {
         );
     }
 
-    @PostMapping("/operations/{operationId}")
+    //Фронт зовёт это как DELETE («удалить операцию»), в swagger историчеcки был POST — принимаем оба.
+    @RequestMapping(value = "/operations/{operationId}", method = {RequestMethod.POST, RequestMethod.DELETE})
     public ResponseEntity<Void> cancelOperation(
             @PathVariable @Positive Long operationId
     ) {
