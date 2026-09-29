@@ -38,12 +38,16 @@ public class StorageItem {
     @Column(name = "cost")
     private BigDecimal cost;
 
-    public StorageItem(String itemName, Storage storage, BigDecimal cost){
+    @Column(name = "price_threshold")
+    private int priceThreshold;
+
+    public StorageItem(String itemName, Storage storage, BigDecimal cost, Integer priceThreshold){
         this.itemName = itemName;
         this.storage = storage;
         itemCount = 0;
         this.cost = cost;
         this.itemStatus = ItemStatus.OUT;
+        this.priceThreshold = priceThreshold;
     }
 
     public void addCount(Integer itemCount){
@@ -54,7 +58,7 @@ public class StorageItem {
     private void changeStatus(){
         if(itemCount == 0){
             itemStatus = ItemStatus.OUT;
-        } else if(itemCount < 10){
+        } else if(itemCount < priceThreshold){
             itemStatus = ItemStatus.FEW;
         }
         else {
