@@ -53,6 +53,7 @@ public class OperationService {
                         "Товар не найден!", storageId, requestBody.getProductName()));
 
         switch (requestBody.getOperationType()){
+            //TODO поменять логику поступлений на рассчет по количеству и базовой цены закупки единицы (StorageItem.buyCost)
             case ADMISSION -> {
                 if(requestBody.getOperationCost() == null || requestBody.getOperationCost().compareTo(BigDecimal.ZERO) == 0){
                     throw new ZeroOrNullAdmissionCost("Пустое или нулевое значение цены поступления!");

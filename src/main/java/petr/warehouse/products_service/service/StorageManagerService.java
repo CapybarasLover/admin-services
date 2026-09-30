@@ -60,7 +60,7 @@ public class StorageManagerService {
         return storage.getId();
     }
 
-    public String addProduct(Long storageId, String itemName, BigDecimal productCost, Integer priceThreshold) {
+    public String addProduct(Long storageId, String itemName, BigDecimal productCost, Integer priceThreshold, BigDecimal buyCost) {
         Optional<Storage> storageOptional = storageRepo.findById(storageId);
 
         Storage storage = storageOptional.orElseThrow(
@@ -68,7 +68,7 @@ public class StorageManagerService {
                         "404: Не удалось добавить продукт на склад так как такой склад не найден!"
                         , storageId));
 
-        StorageItem newItem = new StorageItem(itemName, storage, productCost, priceThreshold);
+        StorageItem newItem = new StorageItem(itemName, storage, productCost, priceThreshold, buyCost);
         try {
             itemRepo.save(newItem);
         } catch (DataIntegrityViolationException e){
@@ -102,15 +102,18 @@ public class StorageManagerService {
 
     public String editProduct(
             Long storageId, Long productId,
-            BigDecimal productCost, Integer priceThreshold) {
+            BigDecimal productCost, Integer countThreshold, BigDecimal buyCost) {
         StorageItem product = itemRepo.findByIdAndStorageId(productId, storageId).orElseThrow(
                 () -> new ProductNotFoundException("Товар не найден!", storageId, productId)
         );
         if(productCost != null){
             product.setCost(productCost);
         }
-        if(priceThreshold != null){
-            product.setPriceThreshold(priceThreshold);
+        if(countThreshold != null){
+            product.setCountThreshold(countThreshold);
+        }
+        if(buyCost != null){
+            product.setBuyCost(buyCost);
         }
         return "Продукт " + product.getItemName() + " успешно обновлен.";
     }

@@ -67,9 +67,11 @@ public class InventoryController {
     public ResponseEntity<Void> postNewProduct(
             @PathVariable @Positive Long storageId,
             @NotBlank @Size(max = 100) @RequestParam String productName,
-            @RequestParam @Positive BigDecimal productCost
+            @RequestParam @Positive BigDecimal productCost,
+            @RequestParam @Positive Integer countThreshold,
+            @RequestParam @Positive BigDecimal buyCost
     ){
-        storageService.addProduct(storageId, productName, productCost);
+        storageService.addProduct(storageId, productName, productCost, countThreshold);
         URI location = URI.create("/storage/" + storageId + "/products/" + productName);
         return ResponseEntity.created(location).build();
     }
@@ -115,10 +117,10 @@ public class InventoryController {
 
     @PatchMapping("/{storageId}/products/{productId}")
     public ResponseEntity<?> editProductDetails(
-            @RequestParam @Positive BigDecimal productCost,
-            @RequestParam @Positive Integer priceThreshold,
+            @RequestParam(required = false) @Positive BigDecimal productCost,
+            @RequestParam(required = false) @Positive Integer countThreshold,
             @PathVariable Long storageId, @PathVariable Long productId){
-        storageService.editProduct(storageId, productId, productCost, priceThreshold);
+        storageService.editProduct(storageId, productId, productCost, countThreshold);
         return ResponseEntity.ok().build();
     }
 }
