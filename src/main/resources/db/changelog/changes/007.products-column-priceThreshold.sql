@@ -1,0 +1,5 @@
+-- changeset Petra:1787037025929-14
+ALTER TABLE item ADD COLUMN count_threshold INTEGER DEFAULT 10;
+
+-- changeset Petra:1787037025929-15
+ALTER TABLE item ADD COLUMN buy_cost INTEGER;

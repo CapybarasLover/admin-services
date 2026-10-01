@@ -24,7 +24,6 @@ import petr.warehouse.products_service.repository.OperationRepo;
 import petr.warehouse.products_service.repository.StorageItemRepo;
 import petr.warehouse.products_service.model.Operation;
 import petr.warehouse.products_service.model.StorageItem;
-import petr.warehouse.products_service.repository.StorageRepo;
 import petr.warehouse.products_service.repository.specification.OperationSpecifications;
 
 import java.math.BigDecimal;
@@ -35,8 +34,8 @@ import java.time.Instant;
 @Transactional
 public class OperationService {
     private final OperationRepo opRepo;
-    private final StorageItemRepo itemRepo;
     private final OperationMapper operationMapper;
+    private final StorageItemRepo itemRepo;
     private final ApplicationEventPublisher events;
 
     @Autowired
@@ -44,7 +43,6 @@ public class OperationService {
             OperationRepo opRepo,
             StorageItemRepo itemRepo,
             OperationMapper operationMapper,
-            StorageRepo storageRepo,
             ApplicationEventPublisher events
     ){
         this.opRepo = opRepo;
@@ -59,6 +57,7 @@ public class OperationService {
                         "Товар не найден!", storageId, requestBody.getProductName()));
 
         switch (requestBody.getOperationType()){
+            //поступление считается на фронтенде по количеству * базовую цену закупки единицы, либо просто сумма всей поставки
             case ADMISSION -> {
                 if(requestBody.getOperationCost() == null || requestBody.getOperationCost().compareTo(BigDecimal.ZERO) == 0){
                     throw new ZeroOrNullAdmissionCost("Пустое или нулевое значение цены поступления!");

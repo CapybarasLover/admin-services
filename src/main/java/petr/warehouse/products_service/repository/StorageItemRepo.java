@@ -12,6 +12,7 @@ public interface StorageItemRepo extends JpaRepository<StorageItem, Long> {
     Optional<StorageItem> findByItemNameAndStorageId(String productName, Long storageId);
 
     List<StorageItem> findAllByStorage_Name(String storageName);
-    int deleteByIdAndStorageId(Long Id, Long storageId);
+    int deleteByIdAndStorageId(Long id, Long storageId);
+    Optional<StorageItem> findByIdAndStorageId(Long id, Long storageId);
     Optional<StorageItem> findByItemNameAndStorage_Name(String itemName, String storageName);
 }

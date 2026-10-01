@@ -1,5 +1,6 @@
 package petr.warehouse.products_service.service;
 
+import petr.warehouse.products_service.model.StorageItem;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,6 @@ import petr.warehouse.products_service.mapper.StorageMapper;
 import petr.warehouse.products_service.repository.StorageItemRepo;
 import petr.warehouse.products_service.model.Storage;
 import petr.warehouse.products_service.repository.StorageRepo;
-import petr.warehouse.products_service.model.StorageItem;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -60,7 +60,7 @@ public class StorageManagerService {
         return storage.getId();
     }
 
-    public String addProduct(Long storageId, String itemName, BigDecimal productCost) {
+    public String addProduct(Long storageId, String itemName, BigDecimal productCost, Integer priceThreshold, BigDecimal buyCost) {
         Optional<Storage> storageOptional = storageRepo.findById(storageId);
 
         Storage storage = storageOptional.orElseThrow(
@@ -68,7 +68,7 @@ public class StorageManagerService {
                         "404: Не удалось добавить продукт на склад так как такой склад не найден!"
                         , storageId));
 
-        StorageItem newItem = new StorageItem(itemName, storage, productCost);
+        StorageItem newItem = new StorageItem(itemName, storage, productCost, priceThreshold, buyCost);
         try {
             itemRepo.save(newItem);
         } catch (DataIntegrityViolationException e){
@@ -98,5 +98,23 @@ public class StorageManagerService {
         ).toList();
 
         return storageInfoDtos;
+    }
+
+    public String editProduct(
+            Long storageId, Long productId,
+            BigDecimal productCost, Integer countThreshold, BigDecimal buyCost) {
+        StorageItem product = itemRepo.findByIdAndStorageId(productId, storageId).orElseThrow(
+                () -> new ProductNotFoundException("Товар не найден!", storageId, productId)
+        );
+        if(productCost != null){
+            product.setCost(productCost);
+        }
+        if(countThreshold != null){
+            product.setCountThreshold(countThreshold);
+        }
+        if(buyCost != null){
+            product.setBuyCost(buyCost);
+        }
+        return "Продукт " + product.getItemName() + " успешно обновлен.";
     }
 }

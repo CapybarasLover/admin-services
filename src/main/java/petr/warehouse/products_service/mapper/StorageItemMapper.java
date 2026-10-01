@@ -17,6 +17,8 @@ public class StorageItemMapper {
         storageItem.setItemName(dto.getName());
         storageItem.setCost(dto.getCost());
         storageItem.setItemStatus(dto.getStatus());
+        storageItem.setBuyCost(dto.getBuyCost());
+        storageItem.setCountThreshold(dto.getCountThreshold());
 
         return storageItem;
     }
@@ -33,6 +35,8 @@ public class StorageItemMapper {
         dto.setName(storageItem.getItemName());
         dto.setCost(storageItem.getCost());
         dto.setStatus(storageItem.getItemStatus());
+        dto.setBuyCost(storageItem.getBuyCost());
+        dto.setCountThreshold(storageItem.getCountThreshold());
 
         return dto;
     }

@@ -38,12 +38,20 @@ public class StorageItem {
     @Column(name = "cost")
     private BigDecimal cost;
 
-    public StorageItem(String itemName, Storage storage, BigDecimal cost){
+    @Column(name = "count_threshold")
+    private int countThreshold;
+
+    @Column(name = "buy_cost")
+    private BigDecimal buyCost;
+
+    public StorageItem(String itemName, Storage storage, BigDecimal cost, Integer countThreshold, BigDecimal buyCost){
         this.itemName = itemName;
         this.storage = storage;
         itemCount = 0;
         this.cost = cost;
         this.itemStatus = ItemStatus.OUT;
+        this.countThreshold = countThreshold;
+        this.buyCost = buyCost;
     }
 
     public void addCount(Integer itemCount){
@@ -54,7 +62,7 @@ public class StorageItem {
     private void changeStatus(){
         if(itemCount == 0){
             itemStatus = ItemStatus.OUT;
-        } else if(itemCount < 10){
+        } else if(itemCount < countThreshold){
             itemStatus = ItemStatus.FEW;
         }
         else {
@@ -67,6 +75,11 @@ public class StorageItem {
             throw new InsufficientStockException("Невозможно списать столько продукта", itemName, minusCount);
         }
         itemCount -= minusCount;
+        changeStatus();
+    }
+
+    public void setCountThreshold(int countThreshold) {
+        this.countThreshold = countThreshold;
         changeStatus();
     }
 }
