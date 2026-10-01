@@ -71,7 +71,7 @@ public class InventoryController {
             @RequestParam @Positive Integer countThreshold,
             @RequestParam @Positive BigDecimal buyCost
     ){
-        storageService.addProduct(storageId, productName, productCost, countThreshold);
+        storageService.addProduct(storageId, productName, productCost, countThreshold, buyCost);
         URI location = URI.create("/storage/" + storageId + "/products/" + productName);
         return ResponseEntity.created(location).build();
     }
@@ -118,9 +118,10 @@ public class InventoryController {
     @PatchMapping("/{storageId}/products/{productId}")
     public ResponseEntity<?> editProductDetails(
             @RequestParam(required = false) @Positive BigDecimal productCost,
+            @RequestParam(required = false) @Positive BigDecimal buyCost,
             @RequestParam(required = false) @Positive Integer countThreshold,
             @PathVariable Long storageId, @PathVariable Long productId){
-        storageService.editProduct(storageId, productId, productCost, countThreshold);
+        storageService.editProduct(storageId, productId, productCost, countThreshold, buyCost);
         return ResponseEntity.ok().build();
     }
 }

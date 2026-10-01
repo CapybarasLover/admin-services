@@ -1,0 +1,2 @@
+--changeset Petra:1787037025929-16
+ALTER TABLE item ALTER COLUMN buy_cost TYPE DECIMAL;

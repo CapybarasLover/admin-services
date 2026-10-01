@@ -12,6 +12,8 @@ public class StorageItemDto {
     private Long id;
     private String name;
     private int count;
-    BigDecimal cost;
+    private BigDecimal cost;
     private ItemStatus status;
+    private BigDecimal buyCost;
+    private int countThreshold;
 }
