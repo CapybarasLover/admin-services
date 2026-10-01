@@ -39,8 +39,7 @@ public class OperationService {
     public OperationService(
             OperationRepo opRepo,
             StorageItemRepo itemRepo,
-            OperationMapper operationMapper,
-            StorageRepo storageRepo
+            OperationMapper operationMapper
     ){
         this.opRepo = opRepo;
         this.itemRepo = itemRepo;
@@ -53,7 +52,7 @@ public class OperationService {
                         "Товар не найден!", storageId, requestBody.getProductName()));
 
         switch (requestBody.getOperationType()){
-            //TODO поменять логику поступлений на рассчет по количеству и базовой цены закупки единицы (StorageItem.buyCost)
+            //поступление считается на фронтенде по количеству * базовую цену закупки единицы, либо просто сумма всей поставки
             case ADMISSION -> {
                 if(requestBody.getOperationCost() == null || requestBody.getOperationCost().compareTo(BigDecimal.ZERO) == 0){
                     throw new ZeroOrNullAdmissionCost("Пустое или нулевое значение цены поступления!");
