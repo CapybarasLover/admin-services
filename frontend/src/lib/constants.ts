@@ -33,8 +33,8 @@ export const STATUS_META: Record<ItemStatus, StatusMeta> = {
   },
 }
 
-/** Порог из StorageItem.changeStatus: меньше 10 штук — FEW. */
-export const FEW_THRESHOLD = 10
+/** Порог «заканчивается» по умолчанию для нового товара — как DEFAULT колонки count_threshold. */
+export const DEFAULT_COUNT_THRESHOLD = 10
 
 interface OperationMeta {
   label: string

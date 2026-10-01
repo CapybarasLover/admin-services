@@ -18,7 +18,12 @@ export interface StorageItemDto {
   name: string
   count: number
   status: ItemStatus
+  /** Цена продажи за единицу: по ней считаются продажи и списания. */
   cost: number
+  /** Средняя цена закупки единицы. У позиций, заведённых до её появления, — null. */
+  buyCost: number | null
+  /** Остаток меньше порога — статус FEW. */
+  countThreshold: number
 }
 
 export interface StorageDto {

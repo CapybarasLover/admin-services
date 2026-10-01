@@ -13,8 +13,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAddProduct } from '@/hooks/useStorageMutations'
 import { ApiError } from '@/lib/api'
-import { LIMITS } from '@/lib/constants'
+import { DEFAULT_COUNT_THRESHOLD, LIMITS } from '@/lib/constants'
 import { showApiError } from '@/lib/errors'
+import { parseDecimal } from '@/lib/format'
+import { cn } from '@/lib/utils'
 
 interface AddProductDialogProps {
   storageId: number
@@ -26,19 +28,28 @@ interface AddProductDialogProps {
 export function AddProductDialog({ storageId, storageName, open, onOpenChange }: AddProductDialogProps) {
   const [name, setName] = useState('')
   const [cost, setCost] = useState('')
+  const [buyCost, setBuyCost] = useState('')
+  const [threshold, setThreshold] = useState(String(DEFAULT_COUNT_THRESHOLD))
   const [nameError, setNameError] = useState<string | null>(null)
   const addProduct = useAddProduct(storageId)
 
   const trimmed = name.trim()
-  const parsedCost = Number(cost.replace(',', '.'))
-  const costValid = cost !== '' && Number.isFinite(parsedCost) && parsedCost > 0
+  const parsedCost = parseDecimal(cost)
+  const costValid = parsedCost !== null && parsedCost > 0
+  const parsedBuyCost = parseDecimal(buyCost)
+  const buyCostValid = parsedBuyCost !== null && parsedBuyCost > 0
+  const parsedThreshold = parseDecimal(threshold)
+  const thresholdValid = parsedThreshold !== null && Number.isInteger(parsedThreshold) && parsedThreshold > 0
   const nameTooLong = trimmed.length > LIMITS.productName
-  const canSubmit = Boolean(trimmed) && !nameTooLong && costValid && !addProduct.isPending
+  const canSubmit =
+    Boolean(trimmed) && !nameTooLong && costValid && buyCostValid && thresholdValid && !addProduct.isPending
 
   function close(next: boolean) {
     if (!next) {
       setName('')
       setCost('')
+      setBuyCost('')
+      setThreshold(String(DEFAULT_COUNT_THRESHOLD))
       setNameError(null)
     }
     onOpenChange(next)
@@ -49,7 +60,12 @@ export function AddProductDialog({ storageId, storageName, open, onOpenChange }:
     if (!canSubmit) return
     setNameError(null)
     try {
-      await addProduct.mutateAsync({ productName: trimmed, productCost: parsedCost })
+      await addProduct.mutateAsync({
+        productName: trimmed,
+        productCost: parsedCost!,
+        buyCost: parsedBuyCost!,
+        countThreshold: parsedThreshold!,
+      })
       toast.success(`Товар «${trimmed}» добавлен`, { description: 'Остаток пока нулевой — проведите поступление.' })
       close(false)
     } catch (cause) {
@@ -103,25 +119,68 @@ export function AddProductDialog({ storageId, storageName, open, onOpenChange }:
             ) : null}
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="product-cost">Цена продажи, ₽</Label>
+              <Input
+                id="product-cost"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={cost}
+                onChange={(event) => setCost(event.target.value)}
+                placeholder="80"
+                aria-invalid={cost !== '' && !costValid}
+              />
+              <p className={cn('text-xs', cost !== '' && !costValid ? 'text-destructive' : 'text-muted-foreground')}>
+                {cost !== '' && !costValid ? 'Цена должна быть больше нуля' : 'За единицу. По ней считаются продажи и списания.'}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="product-buy-cost">Цена закупки, ₽</Label>
+              <Input
+                id="product-buy-cost"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={buyCost}
+                onChange={(event) => setBuyCost(event.target.value)}
+                placeholder="50"
+                aria-invalid={buyCost !== '' && !buyCostValid}
+              />
+              <p
+                className={cn(
+                  'text-xs',
+                  buyCost !== '' && !buyCostValid ? 'text-destructive' : 'text-muted-foreground',
+                )}
+              >
+                {buyCost !== '' && !buyCostValid
+                  ? 'Цена должна быть больше нуля'
+                  : 'За единицу. Подставляется в форму поступления.'}
+              </p>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="product-cost">Цена за единицу, ₽</Label>
+            <Label htmlFor="product-threshold">Порог «заканчивается», шт.</Label>
             <Input
-              id="product-cost"
+              id="product-threshold"
               type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={cost}
-              onChange={(event) => setCost(event.target.value)}
-              placeholder="50"
-              aria-invalid={cost !== '' && !costValid}
+              inputMode="numeric"
+              min="1"
+              step="1"
+              value={threshold}
+              onChange={(event) => setThreshold(event.target.value)}
+              aria-invalid={!thresholdValid}
             />
-            <p className="text-xs text-muted-foreground">
-              По этой цене считается стоимость продаж и списаний.
+            <p className={cn('text-xs', thresholdValid ? 'text-muted-foreground' : 'text-destructive')}>
+              {thresholdValid
+                ? `Когда на складе останется меньше ${parsedThreshold} шт., товар получит статус «Заканчивается».`
+                : 'Целое число больше нуля'}
             </p>
-            {cost !== '' && !costValid ? (
-              <p className="text-xs text-destructive">Цена должна быть больше нуля</p>
-            ) : null}
           </div>
 
           <DialogFooter>

@@ -11,87 +11,67 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useExecuteOperation } from '@/hooks/useOperations'
 import { LIMITS, OPERATION_META } from '@/lib/constants'
 import { showApiError } from '@/lib/errors'
-import { formatMoney, pieces } from '@/lib/format'
+import { formatMoney, parseDecimal, pieces, round2 } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import type { ExecutableOperationType, StorageItemDto } from '@/types/api'
+import type { StorageItemDto } from '@/types/api'
+
+/** Поступление живёт в отдельной форме — у него несколько позиций и своя цена. */
+export type OutgoingOperationType = 'SELL' | 'WRITE_OFF'
 
 interface OperationDialogProps {
   storageId: number
   storageName: string
-  item: StorageItemDto | null
-  type: ExecutableOperationType | null
+  items: StorageItemDto[]
+  type: OutgoingOperationType | null
   onClose: () => void
 }
 
-function round2(value: number) {
-  return Math.round(value * 100) / 100
-}
-
-function toNumber(raw: string) {
-  return Number(raw.replace(',', '.'))
-}
-
-export function OperationDialog({ storageId, storageName, item, type, onClose }: OperationDialogProps) {
+export function OperationDialog({ storageId, storageName, items, type, onClose }: OperationDialogProps) {
+  const [productId, setProductId] = useState('')
   const [count, setCount] = useState('')
   const [comment, setComment] = useState('')
-  const [admissionCost, setAdmissionCost] = useState('')
   const execute = useExecuteOperation(storageId)
 
-  const open = item !== null && type !== null
+  const open = type !== null
 
   // Каждое открытие — чистая форма.
   useEffect(() => {
-    if (!open || !item) return
+    if (!open) return
+    setProductId('')
     setCount('')
     setComment('')
-    setAdmissionCost('')
-  }, [open, item])
+  }, [open])
 
-  if (!open || !item || !type) return null
+  if (!type) return null
 
   const meta = OPERATION_META[type]
-  const isAdmission = type === 'ADMISSION'
-  const available = item.count
+  const item = items.find((candidate) => String(candidate.id) === productId) ?? null
+  const available = item?.count ?? 0
 
-  const parsedCount = toNumber(count)
-  const countValid = count !== '' && Number.isInteger(parsedCount) && parsedCount > 0
-  const exceedsStock = !isAdmission && countValid && parsedCount > available
-
-  // Поступление записывается только полной суммой: цена в карточке товара —
-  // это цена продажи, умножать её на количество закупки бессмысленно.
-  const parsedAdmissionCost = toNumber(admissionCost)
-  const admissionTotal =
-    admissionCost !== '' && Number.isFinite(parsedAdmissionCost) && parsedAdmissionCost > 0
-      ? round2(parsedAdmissionCost)
-      : null
-
-  const settlementTotal = countValid ? round2(item.cost * parsedCount) : null
+  const parsedCount = parseDecimal(count)
+  const countValid = parsedCount !== null && Number.isInteger(parsedCount) && parsedCount > 0
+  const exceedsStock = item !== null && countValid && parsedCount > available
+  const settlementTotal = item && countValid ? round2(item.cost * parsedCount) : null
 
   const commentTooLong = comment.length > LIMITS.comment
-  const canSubmit =
-    countValid &&
-    !exceedsStock &&
-    !commentTooLong &&
-    (!isAdmission || (admissionTotal !== null && admissionTotal > 0)) &&
-    !execute.isPending
+  const canSubmit = item !== null && countValid && !exceedsStock && !commentTooLong && !execute.isPending
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    if (!canSubmit || !item || !type) return
+    if (!canSubmit || !item || !type || !countValid) return
     try {
       await execute.mutateAsync({
         operationType: type,
         productName: item.name,
         count: parsedCount,
-        operationCost: isAdmission ? (admissionTotal ?? undefined) : undefined,
         comment: comment.trim() || undefined,
       })
-      const remainder = isAdmission ? available + parsedCount : available - parsedCount
       toast.success(`${meta.label}: ${item.name}, ${pieces(parsedCount)}`, {
-        description: `Остаток на складе: ${pieces(remainder)}`,
+        description: `Остаток на складе: ${pieces(available - parsedCount)}`,
       })
       onClose()
     } catch (cause) {
@@ -103,21 +83,21 @@ export function OperationDialog({ storageId, storageName, item, type, onClose }:
     <Dialog open={open} onOpenChange={(next) => (next ? null : onClose())}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className={meta.textClassName}>{meta.action}</span>
-            <span aria-hidden className="text-muted-foreground">
-              ·
-            </span>
-            <span className="truncate">{item.name}</span>
-          </DialogTitle>
-          <DialogDescription>
-            {isAdmission
-              ? `Склад «${storageName}»`
-              : `Склад «${storageName}» · цена в карточке ${formatMoney(item.cost)} за единицу`}
-          </DialogDescription>
+          <DialogTitle className={meta.textClassName}>{meta.action}</DialogTitle>
+          <DialogDescription>Склад «{storageName}»</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="operation-product">Товар</Label>
+            <ProductSelect id="operation-product" items={items} value={productId} onValueChange={setProductId} />
+            {item ? (
+              <p className="text-xs text-muted-foreground">
+                Цена в карточке {formatMoney(item.cost)} за единицу
+              </p>
+            ) : null}
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="operation-count">Количество, шт.</Label>
             <Input
@@ -126,8 +106,8 @@ export function OperationDialog({ storageId, storageName, item, type, onClose }:
               inputMode="numeric"
               min="1"
               step="1"
-              max={isAdmission ? undefined : available}
-              autoFocus
+              max={item ? available : undefined}
+              disabled={!item}
               value={count}
               onChange={(event) => setCount(event.target.value)}
               aria-invalid={exceedsStock}
@@ -137,55 +117,32 @@ export function OperationDialog({ storageId, storageName, item, type, onClose }:
               id="operation-count-hint"
               className={cn('text-xs', exceedsStock ? 'text-destructive' : 'text-muted-foreground')}
             >
-              {isAdmission
-                ? `Сейчас на складе ${pieces(available)}`
+              {!item
+                ? 'Сначала выберите товар'
                 : exceedsStock
                   ? `На складе только ${pieces(available)} — больше провести нельзя`
                   : `Доступно: ${pieces(available)}`}
             </p>
           </div>
 
-          {isAdmission ? (
-            <AdmissionCostFields value={admissionCost} onChange={setAdmissionCost} />
-          ) : (
-            <div className="space-y-1.5">
-              <Label htmlFor="operation-settlement">
-                {type === 'SELL' ? 'Сумма продажи' : 'Стоимость списанного'}
-              </Label>
-              <Input
-                id="operation-settlement"
-                readOnly
-                tabIndex={-1}
-                className="tabular bg-muted"
-                value={settlementTotal === null ? '—' : formatMoney(settlementTotal)}
-              />
-              <p className="text-xs text-muted-foreground">
-                {countValid ? `${pieces(parsedCount)} × ${formatMoney(item.cost)}. ` : ''}
-                {type === 'SELL'
-                  ? 'Сумму считает сервер по цене из карточки — вручную её не задать.'
-                  : 'Списание не даёт выручки: в отчёте оно учитывается только в штуках.'}
-              </p>
-            </div>
-          )}
-
           <div className="space-y-1.5">
-            <div className="flex items-baseline justify-between">
-              <Label htmlFor="operation-comment">Комментарий</Label>
-              <span className="tabular text-xs text-muted-foreground">
-                {comment.length}/{LIMITS.comment}
-              </span>
-            </div>
+            <Label htmlFor="operation-settlement">{type === 'SELL' ? 'Сумма продажи' : 'Стоимость списанного'}</Label>
             <Input
-              id="operation-comment"
-              value={comment}
-              onChange={(event) => setComment(event.target.value)}
-              placeholder="Необязательно"
-              aria-invalid={commentTooLong}
+              id="operation-settlement"
+              readOnly
+              tabIndex={-1}
+              className="tabular bg-muted"
+              value={settlementTotal === null ? '—' : formatMoney(settlementTotal)}
             />
-            {commentTooLong ? (
-              <p className="text-xs text-destructive">Не длиннее {LIMITS.comment} символов</p>
-            ) : null}
+            <p className="text-xs text-muted-foreground">
+              {item && countValid ? `${pieces(parsedCount)} × ${formatMoney(item.cost)}. ` : ''}
+              {type === 'SELL'
+                ? 'Сумму считает сервер по цене из карточки — вручную её не задать.'
+                : 'Списание не даёт выручки: в отчёте оно учитывается только в штуках.'}
+            </p>
           </div>
+
+          <CommentField id="operation-comment" value={comment} onChange={setComment} />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
@@ -202,33 +159,81 @@ export function OperationDialog({ storageId, storageName, item, type, onClose }:
 }
 
 /**
- * Бэкенд ждёт стоимость ВСЕЙ партии, и ввести её можно только руками:
- * цена в карточке товара — это цена продажи, считать по ней закупку нельзя.
+ * Выбор позиции склада. Для продажи и списания позиции без остатка
+ * видны, но выбрать их нельзя; уже выбранные в других строках — скрыты.
  */
-function AdmissionCostFields({
+export function ProductSelect({
+  id,
+  items,
+  value,
+  onValueChange,
+  requireStock = true,
+  exclude,
+}: {
+  id?: string
+  items: StorageItemDto[]
+  value: string
+  onValueChange: (value: string) => void
+  requireStock?: boolean
+  exclude?: Set<string>
+}) {
+  const options = items
+    .filter((item) => !exclude?.has(String(item.id)) || String(item.id) === value)
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger id={id}>
+        <SelectValue placeholder="Выберите товар" />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((item) => {
+          const blocked = requireStock && item.count === 0
+          return (
+            <SelectItem key={item.id} value={String(item.id)} disabled={blocked}>
+              {item.name}
+              <span className="ml-2 text-xs text-muted-foreground">{blocked ? 'нет остатка' : pieces(item.count)}</span>
+            </SelectItem>
+          )
+        })}
+      </SelectContent>
+    </Select>
+  )
+}
+
+export function CommentField({
+  id,
   value,
   onChange,
+  hint,
 }: {
+  id: string
   value: string
   onChange: (value: string) => void
+  hint?: string
 }) {
+  const tooLong = value.length > LIMITS.comment
   return (
     <div className="space-y-1.5">
-      <Label htmlFor="admission-total">Сумма поступления, ₽</Label>
+      <div className="flex items-baseline justify-between">
+        <Label htmlFor={id}>Комментарий</Label>
+        <span className="tabular text-xs text-muted-foreground">
+          {value.length}/{LIMITS.comment}
+        </span>
+      </div>
       <Input
-        id="admission-total"
-        type="number"
-        inputMode="decimal"
-        min="0"
-        step="0.01"
-        placeholder="Сколько заплатили за всю партию"
+        id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        placeholder="Необязательно"
+        aria-invalid={tooLong}
       />
-      <p className="text-xs text-muted-foreground">
-        Полная стоимость закупки целиком, а не цена за штуку. Цена в карточке товара при
-        поступлении не пересчитывается.
-      </p>
+      {tooLong ? (
+        <p className="text-xs text-destructive">Не длиннее {LIMITS.comment} символов</p>
+      ) : hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
     </div>
   )
 }

@@ -1,11 +1,24 @@
-import { MoreHorizontal, PackagePlus, PackageSearch, Plus, Search, Trash2, X } from 'lucide-react'
+import {
+  MoreHorizontal,
+  PackageMinus,
+  PackagePlus,
+  PackageSearch,
+  Pencil,
+  Plus,
+  Search,
+  ShoppingCart,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { AddProductDialog } from '@/components/AddProductDialog'
+import { AdmissionDialog } from '@/components/AdmissionDialog'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { EditProductDialog } from '@/components/EditProductDialog'
 import { EmptyState } from '@/components/EmptyState'
-import { OperationDialog } from '@/components/OperationDialog'
+import { OperationDialog, type OutgoingOperationType } from '@/components/OperationDialog'
 import { StatusBadge } from '@/components/StatusBadge'
 import { TableSkeleton } from '@/components/TableSkeleton'
 import { Button } from '@/components/ui/button'
@@ -13,26 +26,27 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useDeleteProduct } from '@/hooks/useStorageMutations'
-import { RoleGate, useAuth } from '@/lib/auth'
-import { OPERATION_META, OPERATION_TYPES, STATUS_META } from '@/lib/constants'
+import { useAuth } from '@/lib/auth'
+import { OPERATION_META, STATUS_META } from '@/lib/constants'
 import { showApiError } from '@/lib/errors'
 import { formatMoney, pieces } from '@/lib/format'
 import { useStorageContext } from '@/pages/StorageLayout'
-import type { ExecutableOperationType, ItemStatus, StorageItemDto } from '@/types/api'
+import type { ItemStatus, StorageItemDto } from '@/types/api'
 
 export function ItemsTab() {
   const { storageId, storage, isLoading } = useStorageContext()
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [adding, setAdding] = useState(false)
-  const [operation, setOperation] = useState<{ item: StorageItemDto; type: ExecutableOperationType } | null>(null)
+  const [admitting, setAdmitting] = useState(false)
+  const [outgoing, setOutgoing] = useState<OutgoingOperationType | null>(null)
+  const [editing, setEditing] = useState<StorageItemDto | null>(null)
   const [pendingDeletion, setPendingDeletion] = useState<StorageItemDto | null>(null)
   const { isAdmin } = useAuth()
   const deleteProduct = useDeleteProduct(storageId)
@@ -75,6 +89,7 @@ export function ItemsTab() {
 
   const storageName = storage?.name ?? ''
   const filtered = Boolean(statusFilter) || query.trim().length > 0
+  const hasStock = items.some((item) => item.count > 0)
 
   return (
     <div className="space-y-4">
@@ -102,6 +117,32 @@ export function ItemsTab() {
           </button>
         ) : null}
 
+        {/* Операции больше не привязаны к строке: товар выбирается внутри формы. */}
+        <div className="order-last grid w-full grid-cols-3 gap-2 md:order-none md:mx-auto md:flex md:w-auto max-sm:[&_svg]:hidden">
+          <Button variant="outline" disabled={!items.length} onClick={() => setAdmitting(true)}>
+            <PackagePlus className={OPERATION_META.ADMISSION.textClassName} />
+            {OPERATION_META.ADMISSION.action}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={!hasStock}
+            title={hasStock ? undefined : 'На складе нет остатков'}
+            onClick={() => setOutgoing('SELL')}
+          >
+            <ShoppingCart className={OPERATION_META.SELL.textClassName} />
+            {OPERATION_META.SELL.action}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={!hasStock}
+            title={hasStock ? undefined : 'На складе нет остатков'}
+            onClick={() => setOutgoing('WRITE_OFF')}
+          >
+            <PackageMinus className={OPERATION_META.WRITE_OFF.textClassName} />
+            {OPERATION_META.WRITE_OFF.action}
+          </Button>
+        </div>
+
         <Button className="ml-auto" onClick={() => setAdding(true)}>
           <Plus />
           Товар
@@ -110,7 +151,7 @@ export function ItemsTab() {
 
       <div className="rounded-xl border bg-card">
         {isLoading ? (
-          <TableSkeleton columns={6} />
+          <TableSkeleton columns={7} />
         ) : !items.length ? (
           <EmptyState
             icon={PackagePlus}
@@ -145,6 +186,7 @@ export function ItemsTab() {
                     <TableHead>Название</TableHead>
                     <TableHead className="text-right">Остаток</TableHead>
                     <TableHead>Статус</TableHead>
+                    <TableHead className="text-right">Закупка за ед.</TableHead>
                     <TableHead className="text-right">Цена за ед.</TableHead>
                     <TableHead className="text-right">Стоимость остатка</TableHead>
                     <TableHead className="w-12" />
@@ -158,13 +200,16 @@ export function ItemsTab() {
                       <TableCell>
                         <StatusBadge status={item.status} />
                       </TableCell>
+                      <TableCell className="tabular text-right text-muted-foreground">
+                        {formatMoney(item.buyCost)}
+                      </TableCell>
                       <TableCell className="tabular text-right">{formatMoney(item.cost)}</TableCell>
                       <TableCell className="tabular text-right">{formatMoney(item.cost * item.count)}</TableCell>
                       <TableCell className="text-right">
                         <RowActions
                           item={item}
                           isAdmin={isAdmin}
-                          onOperation={(type) => setOperation({ item, type })}
+                          onEdit={() => setEditing(item)}
                           onDelete={() => setPendingDeletion(item)}
                         />
                       </TableCell>
@@ -183,11 +228,14 @@ export function ItemsTab() {
                     <p className="tabular text-sm text-muted-foreground">
                       {pieces(item.count)} × {formatMoney(item.cost)} = {formatMoney(item.cost * item.count)}
                     </p>
+                    {item.buyCost !== null ? (
+                      <p className="tabular text-xs text-muted-foreground">Закупка {formatMoney(item.buyCost)} за шт.</p>
+                    ) : null}
                   </div>
                   <RowActions
                     item={item}
                     isAdmin={isAdmin}
-                    onOperation={(type) => setOperation({ item, type })}
+                    onEdit={() => setEditing(item)}
                     onDelete={() => setPendingDeletion(item)}
                   />
                 </li>
@@ -210,12 +258,27 @@ export function ItemsTab() {
         onOpenChange={setAdding}
       />
 
+      <AdmissionDialog
+        storageId={storageId}
+        storageName={storageName}
+        items={items}
+        open={admitting}
+        onClose={() => setAdmitting(false)}
+      />
+
       <OperationDialog
         storageId={storageId}
         storageName={storageName}
-        item={operation?.item ?? null}
-        type={operation?.type ?? null}
-        onClose={() => setOperation(null)}
+        items={items}
+        type={outgoing}
+        onClose={() => setOutgoing(null)}
+      />
+
+      <EditProductDialog
+        storageId={storageId}
+        storageName={storageName}
+        item={editing}
+        onClose={() => setEditing(null)}
       />
 
       <ConfirmDialog
@@ -240,17 +303,19 @@ export function ItemsTab() {
   )
 }
 
+/** Правка и удаление меняют карточку товара — это работа админа. */
 function RowActions({
   item,
   isAdmin,
-  onOperation,
+  onEdit,
   onDelete,
 }: {
   item: StorageItemDto
   isAdmin: boolean
-  onOperation: (type: ExecutableOperationType) => void
+  onEdit: () => void
   onDelete: () => void
 }) {
+  if (!isAdmin) return null
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -259,31 +324,15 @@ function RowActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Операции</DropdownMenuLabel>
-        {OPERATION_TYPES.map((type) => {
-          const meta = OPERATION_META[type]
-          const blocked = type !== 'ADMISSION' && item.count === 0
-          return (
-            <DropdownMenuItem key={type} disabled={blocked} onSelect={() => onOperation(type)}>
-              <span className={meta.textClassName}>{meta.action}</span>
-              {blocked ? <span className="ml-auto text-xs text-muted-foreground">нет остатка</span> : null}
-            </DropdownMenuItem>
-          )
-        })}
-        {/* Правка позиции появится здесь, когда заказчик определится с эндпоинтом. */}
-        <RoleGate admin>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={onDelete}>
-            <Trash2 />
-            Удалить
-          </DropdownMenuItem>
-        </RoleGate>
-        {!isAdmin ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Удаление доступно админу</DropdownMenuLabel>
-          </>
-        ) : null}
+        <DropdownMenuItem onSelect={onEdit}>
+          <Pencil />
+          Изменить
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={onDelete}>
+          <Trash2 />
+          Удалить
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

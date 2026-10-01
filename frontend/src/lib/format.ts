@@ -56,3 +56,15 @@ export function pluralize(count: number, one: string, few: string, many: string)
 export const positions = (count: number) => pluralize(count, 'позиция', 'позиции', 'позиций')
 export const pieces = (count: number) => pluralize(count, 'шт.', 'шт.', 'шт.')
 export const operations = (count: number) => pluralize(count, 'операция', 'операции', 'операций')
+
+/** Число из поля ввода: запятая сойдёт за точку, пустое и мусор — null. */
+export function parseDecimal(raw: string): number | null {
+  if (raw.trim() === '') return null
+  const value = Number(raw.replace(',', '.'))
+  return Number.isFinite(value) ? value : null
+}
+
+/** Деньги дальше копеек не тащим — ни в итогах, ни в запросе. */
+export function round2(value: number): number {
+  return Math.round(value * 100) / 100
+}
