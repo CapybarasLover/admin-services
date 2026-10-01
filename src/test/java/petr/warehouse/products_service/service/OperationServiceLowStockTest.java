@@ -13,7 +13,6 @@ import petr.warehouse.products_service.model.Storage;
 import petr.warehouse.products_service.model.StorageItem;
 import petr.warehouse.products_service.repository.OperationRepo;
 import petr.warehouse.products_service.repository.StorageItemRepo;
-import petr.warehouse.products_service.repository.StorageRepo;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -42,13 +41,13 @@ class OperationServiceLowStockTest {
         storage.setId(1L);
         storage.setName("Основной");
 
-        item = new StorageItem("Стаканы", storage, new BigDecimal("100"));
+        item = new StorageItem("Стаканы", storage, new BigDecimal("100"), 10, new BigDecimal("60"));
         item.setId(10L);
         item.addCount(12);
 
         when(itemRepo.findByItemNameAndStorageId("Стаканы", 1L)).thenReturn(Optional.of(item));
 
-        service = new OperationService(opRepo, itemRepo, new OperationMapper(), mock(StorageRepo.class), events);
+        service = new OperationService(opRepo, itemRepo, new OperationMapper(), events);
     }
 
     @Test
