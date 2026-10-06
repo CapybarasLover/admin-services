@@ -19,6 +19,8 @@ import java.util.Map;
 @Component
 public class TelegramApiClient {
     private static final Logger log = LoggerFactory.getLogger(TelegramApiClient.class);
+    //У ветки General нет своего message_thread_id: туда пишем как в обычный чат.
+    public static final long GENERAL_TOPIC = 1;
 
     private final TelegramProperties properties;
     private final RestClient restClient;
@@ -68,6 +70,11 @@ public class TelegramApiClient {
         body.put("parse_mode", "HTML");
         if (replyMarkup != null) {
             body.put("reply_markup", replyMarkup);
+        }
+        //Ветка подставляется здесь, а не в каждом из вызовов бота.
+        Long topic = properties.topicFor(chatId);
+        if (topic != null && topic != GENERAL_TOPIC) {
+            body.put("message_thread_id", topic);
         }
 
         try {

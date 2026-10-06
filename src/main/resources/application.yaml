@@ -39,6 +39,8 @@ telegram:
   token: ${TELEGRAM_BOT_TOKEN:}
   # Чат для уведомлений. У группы id отрицательный, узнать можно командой /chatid
   chat-id: ${TELEGRAM_CHAT_ID:}
+  # Ветка супергруппы из chat-id, где работает бот (форум с темами). Пусто — вся группа.
+  topic-id: ${TELEGRAM_TOPIC_ID:}
   # Кого тегать в уведомлении, например @dasha. Пинг сработает, только если у человека есть @username
   mention: ${TELEGRAM_MENTION:}
   poll-timeout: ${TELEGRAM_POLL_TIMEOUT:25s}

@@ -37,6 +37,7 @@ class TelegramBotServiceTest {
     private TelegramApiClient api;
     private OperationService operationService;
     private TelegramChatRegistry chats;
+    private TelegramProperties properties;
     private TelegramBotService bot;
 
     @BeforeEach
@@ -63,7 +64,8 @@ class TelegramBotServiceTest {
         when(storageService.getAllStorages()).thenReturn(List.of(info));
         when(storageService.getStorageById(1L)).thenReturn(storage);
 
-        bot = new TelegramBotService(api, storageService, operationService, chats);
+        properties = new TelegramProperties();
+        bot = new TelegramBotService(api, storageService, operationService, chats, properties);
     }
 
     @Test
@@ -237,6 +239,36 @@ class TelegramBotServiceTest {
         ArgumentCaptor<Object> markup = ArgumentCaptor.forClass(Object.class);
         verify(api).sendMessage(eq(CHAT), contains("Сколько штук пришло?"), markup.capture());
         assertThat(markup.getValue().toString()).contains("inline_keyboard").contains("no");
+    }
+
+    //Привязка к ветке: в чужой ветке группы бот молчит, в своей отвечает как обычно.
+    @Test
+    void ignoresOtherTopicsOfBoundGroup() {
+        properties.setChatId(String.valueOf(GROUP));
+        properties.setTopicId("45");
+
+        bot.handleUpdate(topicMessage("/storages", 99));
+        verify(api, never()).sendMessage(anyLong(), anyString(), any());
+
+        bot.handleUpdate(topicMessage("/storages", 45));
+        verify(api).sendMessage(eq(GROUP), contains("Склады"), any());
+    }
+
+    @Test
+    void generalTopicMessagesAreOutsideBoundTopic() {
+        properties.setChatId(String.valueOf(GROUP));
+        properties.setTopicId("45");
+
+        bot.handleUpdate(MAPPER.readTree("{\"message\":{\"chat\":{\"id\":" + GROUP
+                + ",\"type\":\"supergroup\",\"is_forum\":true},\"text\":\"/storages\"}}"));
+
+        verify(api, never()).sendMessage(anyLong(), anyString(), any());
+    }
+
+    private static JsonNode topicMessage(String text, long thread) {
+        return MAPPER.readTree("{\"message\":{\"chat\":{\"id\":" + GROUP
+                + ",\"type\":\"supergroup\",\"is_forum\":true},\"is_topic_message\":true,\"message_thread_id\":"
+                + thread + ",\"text\":\"" + text + "\"}}");
     }
 
     private static JsonNode groupCallback(String data) {

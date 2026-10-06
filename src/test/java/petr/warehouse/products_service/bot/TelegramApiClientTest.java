@@ -25,6 +25,7 @@ class TelegramApiClientTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private HttpServer server;
+    private TelegramProperties properties;
     private TelegramApiClient client;
     private final Map<String, String> requests = new ConcurrentHashMap<>();
     private final Map<String, String> responses = new ConcurrentHashMap<>();
@@ -47,7 +48,7 @@ class TelegramApiClientTest {
         });
         server.start();
 
-        TelegramProperties properties = new TelegramProperties();
+        properties = new TelegramProperties();
         properties.setToken("TEST-TOKEN");
         properties.setChatId("-100500");
         properties.setApiUrl("http://127.0.0.1:" + server.getAddress().getPort());
@@ -94,6 +95,17 @@ class TelegramApiClientTest {
         JsonNode request = MAPPER.readTree(requests.get("getUpdates"));
         assertThat(request.path("timeout").asLong()).isEqualTo(1);
         assertThat(request.path("allowed_updates").get(0).asString()).isEqualTo("message");
+    }
+
+    @Test
+    void sendsIntoBoundTopicOnlyForItsGroup() {
+        properties.setTopicId("45");
+
+        client.sendMessage("-100500", "в ветку");
+        assertThat(MAPPER.readTree(requests.get("sendMessage")).path("message_thread_id").asLong()).isEqualTo(45);
+
+        client.sendMessage("777", "в личку");
+        assertThat(MAPPER.readTree(requests.get("sendMessage")).has("message_thread_id")).isFalse();
     }
 
     @Test

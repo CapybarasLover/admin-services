@@ -43,6 +43,7 @@ public class TelegramBotService {
     private final StorageManagerService storageService;
     private final OperationService operationService;
     private final TelegramChatRegistry chats;
+    private final TelegramProperties properties;
 
     private final Map<Long, AdmissionDraft> drafts = new ConcurrentHashMap<>();
 
@@ -50,15 +51,26 @@ public class TelegramBotService {
             TelegramApiClient api,
             StorageManagerService storageService,
             OperationService operationService,
-            TelegramChatRegistry chats
+            TelegramChatRegistry chats,
+            TelegramProperties properties
     ) {
         this.api = api;
         this.storageService = storageService;
         this.operationService = operationService;
         this.chats = chats;
+        this.properties = properties;
     }
 
     public void handleUpdate(JsonNode update) {
+        JsonNode message = update.has("callback_query")
+                ? update.path("callback_query").path("message")
+                : update.path("message");
+        //Бот привязан к ветке группы — остальные ветки этой группы его не касаются.
+        if (!message.isMissingNode()
+                && properties.isOutsideTopic(message.path("chat").path("id").asLong(), threadOf(message))) {
+            return;
+        }
+
         if (update.has("my_chat_member")) {
             handleMembership(update.path("my_chat_member"));
         } else if (update.has("callback_query")) {
@@ -88,7 +100,7 @@ public class TelegramBotService {
                 sendWelcome(chatId);
             }
             case "/help" -> sendHelp(chatId);
-            case "/chatid" -> api.sendMessage(chatId, "id этого чата: <code>" + chatId + "</code>");
+            case "/chatid" -> sendChatId(chatId, message);
             case "/alerts" -> toggleAlerts(chatId, message.path("chat"));
             case "/cancel" -> cancelDialog(chatId);
             case "/stock" -> sendLowStock(chatId);
@@ -587,6 +599,21 @@ public class TelegramBotService {
         api.sendMessage(chatId, "Готово: буду писать сюда, когда товар заканчивается.", mainKeyboard());
     }
 
+    private void sendChatId(long chatId, JsonNode message) {
+        String text = "id этого чата: <code>" + chatId + "</code>";
+        if (message.path("is_topic_message").asBoolean(false)) {
+            text += "\nid ветки: <code>" + threadOf(message) + "</code>";
+        }
+        api.sendMessage(chatId, text);
+    }
+
+    //Сообщения из General приходят без message_thread_id, у остальных веток он есть.
+    private static long threadOf(JsonNode message) {
+        return message.path("is_topic_message").asBoolean(false)
+                ? message.path("message_thread_id").asLong(TelegramApiClient.GENERAL_TOPIC)
+                : TelegramApiClient.GENERAL_TOPIC;
+    }
+
     private static String chatTitle(JsonNode chat) {
         String title = chat.path("title").asString("");
         if (!title.isBlank()) {
@@ -612,7 +639,7 @@ public class TelegramBotService {
                         + "/storages — склады и остатки по каждому\n"
                         + "/cancel — отменить текущий ввод (или просто «отмена» на любом шаге)\n"
                         + "/alerts — включить или выключить уведомления в этом чате\n"
-                        + "/chatid — id этого чата\n\n"
+                        + "/chatid — id этого чата (и ветки, если спросить в ней)\n\n"
                         + "Можно просто написать «поступление» или «что заканчивается».",
                 mainKeyboard());
     }

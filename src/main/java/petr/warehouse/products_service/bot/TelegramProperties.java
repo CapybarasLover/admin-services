@@ -25,6 +25,11 @@ public class TelegramProperties {
     //Для группы это отрицательное число, для личной переписки — id пользователя.
     private String chatId = "";
 
+    //Ветка (topic) супергруппы-форума из chat-id, в которой живёт бот: пишет только туда
+    //и не реагирует на остальные ветки этой группы. Другие чаты не затрагивает. 1 — ветка General.
+    //Узнать id: /chatid прямо в ветке, или последнее число в ссылке на сообщение t.me/c/.../<ветка>/...
+    private String topicId = "";
+
     //Кого дёргать в уведомлении. Пинг сработает только если у человека есть @username.
     private String mention = "";
 
@@ -45,6 +50,23 @@ public class TelegramProperties {
 
     public boolean isConfigured() {
         return enabled && !token.isBlank();
+    }
+
+    //Ветка для этого чата или null, если бот в нём не ограничен веткой.
+    public Long topicFor(String chat) {
+        if (topicId == null || topicId.isBlank() || chatId.isBlank() || !chatId.trim().equals(chat)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(topicId.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public boolean isOutsideTopic(long chat, long threadId) {
+        Long topic = topicFor(String.valueOf(chat));
+        return topic != null && topic != threadId;
     }
 
     public boolean hasAlertChat() {
