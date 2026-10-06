@@ -7,7 +7,12 @@ import tailwindcss from '@tailwindcss/vite'
 // поэтому origin один и проксировать нечего.
 const backend = 'http://localhost:8081'
 
+// Секретный префикс, под которым приложение висит на сервере (как у панели x-ui).
+// Передаётся при сборке: VITE_BASE_PATH=/k3j9x2abc. Должен совпадать с APP_BASE_PATH бэкенда.
+const basePath = (process.env.VITE_BASE_PATH ?? '').replace(/\/+$/, '')
+
 export default defineConfig({
+  base: `${basePath}/`,
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import petr.warehouse.products_service.auth.AuthException;
 import petr.warehouse.products_service.exception.data.*;
 import petr.warehouse.products_service.exception.request.ReportPdfUnavailableException;
 import petr.warehouse.products_service.exception.request.ZeroOrNullAdmissionCost;
@@ -93,6 +94,11 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
                 "Сервис формирования PDF недоступен. Попробуйте позже или скачайте отчёт в JSON.");
         logger.warn("PDF-сервис недоступен: " + e.getMessage());
         return problemDetail;
+    }
+
+    @ExceptionHandler
+    public ProblemDetail handleAuth(AuthException e){
+        return ProblemDetail.forStatusAndDetail(e.getStatus(), e.getMessage());
     }
 
     @Override

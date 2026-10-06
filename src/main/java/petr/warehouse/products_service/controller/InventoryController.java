@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import petr.warehouse.products_service.auth.AdminOnly;
 import petr.warehouse.products_service.dto.OperationDto;
 import petr.warehouse.products_service.dto.OperationRequestDto;
 import petr.warehouse.products_service.dto.StorageInfoDto;
@@ -77,6 +78,7 @@ public class InventoryController {
     }
 
     //Удалить продукт
+    @AdminOnly
     @DeleteMapping("/{storageId}/products/{productId}")
     public ResponseEntity<?> deleteProduct(
             @PathVariable @Positive Long storageId,
@@ -108,6 +110,7 @@ public class InventoryController {
     }
 
     //Фронт зовёт это как DELETE («удалить операцию»), в swagger историчеcки был POST — принимаем оба.
+    @AdminOnly
     @RequestMapping(value = "/operations/{operationId}", method = {RequestMethod.POST, RequestMethod.DELETE})
     public ResponseEntity<Void> cancelOperation(
             @PathVariable @Positive Long operationId
@@ -116,6 +119,7 @@ public class InventoryController {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
+    @AdminOnly
     @PatchMapping("/{storageId}/products/{productId}")
     public ResponseEntity<?> editProductDetails(
             @RequestParam(required = false) @Positive BigDecimal productCost,

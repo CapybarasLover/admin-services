@@ -4,12 +4,18 @@ services:
       - .env
     build:
       context: .
+      args:
+        # Секретный префикс пути, задаётся в .env: APP_BASE_PATH=/k3j9x2abc
+        BASE_PATH: ${APP_BASE_PATH:-}
     image: inventory_backend
+    restart: unless-stopped
     environment:
       # Наружу python-сервис не публикуется — только внутри сети compose
       REPORT_PDF_URL: http://report-service:8000
+      APP_BASE_PATH: ${APP_BASE_PATH:-}
     ports:
-      - "8080:8080"
+      # Только localhost: снаружи ходят через nginx с HTTPS
+      - "127.0.0.1:8080:8080"
     depends_on:
       liquibase:
         condition: service_completed_successfully
@@ -41,7 +47,8 @@ services:
       POSTGRES_DB: ${DB_NAME}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5430:5432"
+      # Docker обходит ufw, поэтому без 127.0.0.1 база торчит в интернет
+      - "127.0.0.1:5430:5432"
     volumes:
       - dbv:/var/lib/postgresql/data/pgdata
     healthcheck:

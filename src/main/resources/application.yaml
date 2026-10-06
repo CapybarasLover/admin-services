@@ -1,5 +1,10 @@
 app:
   time-zone: Europe/Moscow
+# Секретный префикс пути, как у панели x-ui: APP_BASE_PATH=/k3j9x2abc.
+# Пусто — приложение висит в корне. Фронт собирается с тем же префиксом (см. Dockerfile).
+server:
+  servlet:
+    context-path: ${APP_BASE_PATH:}
 spring:
   data:
     web:
@@ -13,6 +18,11 @@ spring:
       ddl-auto: validate
   liquibase:
     enabled: false # Запуск через докер, в котором отдельный контейнер для LB
+
+# Тестовая авторизация (ветка test-branch).
+# После того как заведены нужные учётки, регистрацию можно закрыть: AUTH_REGISTRATION_ENABLED=false
+auth:
+  registration-enabled: ${AUTH_REGISTRATION_ENABLED:true}
 
 # Python-сервис, который рисует PDF по SummaryReportDto.
 # В docker он доступен по имени сервиса, локально — по localhost.
