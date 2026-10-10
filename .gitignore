@@ -50,3 +50,4 @@ __pycache__/
 *.pyc
 
 /ROADMAP_V1_monolith.md
+/frontend/.env.local
