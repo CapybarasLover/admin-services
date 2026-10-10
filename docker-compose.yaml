@@ -3,7 +3,7 @@ services:
     env_file:
       - .env
     build:
-      context: .
+      context: ./services/products-service
     image: inventory_backend
     environment:
       # Наружу python-сервис не публикуется — только внутри сети compose
@@ -14,13 +14,13 @@ services:
       liquibase:
         condition: service_completed_successfully
       report-service:
-        condition: service_healthy
+        condition: service_started
     networks:
       - backend_net
 
   report-service:
     build:
-      context: ./report-service
+      context: ./services/report-service
     image: inventory_report_pdf
     restart: unless-stopped
     deploy:
@@ -66,7 +66,7 @@ services:
     depends_on:
       - db
     volumes:
-      - ./src/main/resources/db/changelog:/liquibase/changelog:ro
+      - ./services/products-service/src/main/resources/db/changelog:/liquibase/changelog:ro
     working_dir: /liquibase/changelog
     command:
       - --changeLogFile=db.changelog-master.yaml
