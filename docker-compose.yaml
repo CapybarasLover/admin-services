@@ -1,5 +1,5 @@
 services:
-  backend:
+  products-service:
     env_file:
       - .env
     build:

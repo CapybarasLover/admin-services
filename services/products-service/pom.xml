@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>petr.warehouse</groupId>
-    <artifactId>warehouse_inventory_management</artifactId>
+    <artifactId>products-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>warehouse_inventory_management</name>
-    <description>warehouse_inventory_management</description>
+    <name>products-service</name>
+    <description>products-service</description>
     <url/>
     <licenses>
         <license/>
