@@ -19,13 +19,13 @@
 docker compose up -d
 ```
 
-Бэкенд ждёт его готовности через healthcheck и ходит по
+Бэкенд не ждёт его готовности (склад должен работать и без PDF) и ходит по
 `REPORT_PDF_URL=http://report-service:8000`.
 
 ## Запуск локально
 
 ```bash
-cd report-service
+cd services/report-service
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --port 8000
@@ -36,6 +36,7 @@ uvicorn app.main:app --port 8000
 
 ```bash
 uvicorn app.main:app --port 8010
+cd ../products-service
 REPORT_PDF_URL=http://127.0.0.1:8010 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 

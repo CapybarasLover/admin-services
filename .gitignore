@@ -42,7 +42,7 @@ build/
 /frontend/node_modules/
 /frontend/dist/
 # Сюда складывается собранный UI (npm run build), в репозитории не нужен
-/src/main/resources/static/
+/services/products-service/src/main/resources/static/
 
 # python
 .venv/
@@ -50,3 +50,4 @@ __pycache__/
 *.pyc
 
 /ROADMAP_V1_monolith.md
+/frontend/.env.local
