@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 import petr.warehouse.products_service.dto.OperationDto;
 import petr.warehouse.products_service.dto.OperationRequestDto;
 import petr.warehouse.products_service.dto.StorageInfoDto;
@@ -72,7 +73,10 @@ public class InventoryController {
             @RequestParam @Positive BigDecimal buyCost
     ){
         storageService.addProduct(storageId, productName, productCost, countThreshold, buyCost);
-        URI location = URI.create("/storage/" + storageId + "/products/" + productName);
+        URI location = UriComponentsBuilder.fromPath("/storage/{storageId}/products/{productName}")
+                .encode()
+                .buildAndExpand(storageId, productName)
+                .toUri();
         return ResponseEntity.created(location).build();
     }
 
